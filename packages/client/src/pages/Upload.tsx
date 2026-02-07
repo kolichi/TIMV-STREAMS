@@ -129,10 +129,22 @@ export function Upload() {
       }
     },
     onError: (error: any) => {
+      const errorData = error.response?.data;
+      let errorMessage = errorData?.error || 'Upload failed';
+      
+      // Add tip if available
+      if (errorData?.tip) {
+        errorMessage += `. ${errorData.tip}`;
+      }
+      // Add size info if available
+      if (errorData?.currentSizeMB && errorData?.maxSizeMB) {
+        errorMessage += ` (Your file: ${errorData.currentSizeMB}MB, Max: ${errorData.maxSizeMB}MB)`;
+      }
+      
       setFiles((prev) =>
         prev.map((f, i) =>
           i === currentFileIndex
-            ? { ...f, status: 'error', error: error.response?.data?.error || 'Upload failed' }
+            ? { ...f, status: 'error', error: errorMessage }
             : f
         )
       );
@@ -141,6 +153,8 @@ export function Upload() {
   });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    const maxSize = 3 * 1024 * 1024; // 3MB limit
+    
     const audioFiles = acceptedFiles.filter((file) => {
       const mimeMatch = SUPPORTED_AUDIO_MIMES.includes(file.type);
       const extMatch = SUPPORTED_AUDIO_EXTENSIONS.some(ext => 
@@ -151,10 +165,17 @@ export function Upload() {
     
     if (audioFiles.length === 0) return;
     
+    // Check for oversized files and warn user
+    const oversizedFiles = audioFiles.filter(f => f.size > maxSize);
+    if (oversizedFiles.length > 0) {
+      alert(`${oversizedFiles.length} file(s) exceed 3MB limit and may fail to upload. Consider compressing to MP3 at 128kbps.`);
+    }
+    
     const newFiles: UploadedFile[] = audioFiles.map((file) => ({
       file,
       progress: 0,
-      status: 'pending',
+      status: file.size > maxSize ? 'error' : 'pending',
+      error: file.size > maxSize ? `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max 3MB.` : undefined,
     }));
     
     setFiles((prev) => [...prev, ...newFiles]);
@@ -182,7 +203,7 @@ export function Upload() {
       'audio/*': SUPPORTED_AUDIO_EXTENSIONS,
     },
     multiple: true,
-    maxSize: 50 * 1024 * 1024, // 50MB limit
+    maxSize: 3 * 1024 * 1024, // 3MB limit for serverless
   });
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,6 +220,23 @@ export function Upload() {
     if (files.length === 0 || !title) return;
     
     const currentFile = files[currentFileIndex];
+    
+    // Client-side file size check
+    const maxSize = 3 * 1024 * 1024; // 3MB
+    if (currentFile.file.size > maxSize) {
+      setFiles((prev) =>
+        prev.map((f, i) =>
+          i === currentFileIndex
+            ? { 
+                ...f, 
+                status: 'error', 
+                error: `File too large (${(currentFile.file.size / 1024 / 1024).toFixed(1)}MB). Max 3MB. Try compressing to MP3 at 128kbps.` 
+              }
+            : f
+        )
+      );
+      return;
+    }
     
     setFiles((prev) =>
       prev.map((f, i) =>
@@ -340,7 +378,7 @@ export function Upload() {
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-2">Upload Music</h1>
       <p className="text-surface-400 mb-8">
-        Maximum file size: 50MB • Supported formats: MP3, WAV, FLAC, AAC, M4A, OGG, Opus, WebM, AIFF, WMA
+        Maximum file size: 3MB • For best results, use MP3 at 128kbps • Supported: MP3, WAV, FLAC, AAC, M4A, OGG
       </p>
 
       {/* Dropzone */}

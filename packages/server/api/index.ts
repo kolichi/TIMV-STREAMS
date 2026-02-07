@@ -16,9 +16,37 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret';
 
-// CORS - keep it simple for serverless
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '100mb' })); // Increased for audio file uploads
+// CORS configuration - must be before other middleware
+const corsOptions = {
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// Body parser with Vercel-compatible limit (4.5MB max for serverless)
+// Base64 adds ~33% overhead, so ~3MB original file = ~4MB base64
+app.use(express.json({ limit: '4.5mb' }));
+
+// Error handler for body-parser errors (including payload too large)
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  // Set CORS headers even on errors
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ 
+      error: 'File too large for direct upload. Maximum ~3MB. For larger files, please compress your audio or use a lower bitrate.',
+      maxSizeMB: 3,
+      tip: 'Try converting to MP3 at 128kbps or lower'
+    });
+  }
+  next(err);
+});
 
 // Auth middleware
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
@@ -625,12 +653,18 @@ app.post('/api/upload/track', authMiddleware, async (req: Request, res: Response
       });
     }
     
-    // Check file size (base64 is ~33% larger, so 50MB file = ~67MB base64)
+    // Check file size - Vercel serverless has 4.5MB body limit
+    // Base64 adds ~33% overhead, so max original file is ~3MB
     const approximateSize = (audio.length * 3) / 4; // Approximate original size
-    const maxSize = 50 * 1024 * 1024; // 50MB limit
+    const maxSize = 3 * 1024 * 1024; // 3MB limit for serverless
     
     if (approximateSize > maxSize) {
-      return res.status(400).json({ error: 'File too large. Maximum size is 50MB' });
+      return res.status(413).json({ 
+        error: 'File too large. Maximum size is 3MB for direct upload.',
+        maxSizeMB: 3,
+        currentSizeMB: Math.round(approximateSize / 1024 / 1024 * 10) / 10,
+        tip: 'Try compressing your audio to MP3 at 128kbps or lower bitrate'
+      });
     }
     
     // Create audio URL (data URL for now - could use cloud storage)
@@ -682,12 +716,13 @@ app.get('/api/upload/formats', (req: Request, res: Response) => {
     audio: {
       mimeTypes: SUPPORTED_AUDIO_FORMATS,
       extensions: ['.mp3', '.wav', '.flac', '.aac', '.m4a', '.ogg', '.opus', '.webm', '.aiff', '.wma'],
-      maxSizeMB: 50
+      maxSizeMB: 3, // Vercel serverless limit
+      note: 'For best results, use MP3 at 128-192kbps'
     },
     image: {
       mimeTypes: SUPPORTED_IMAGE_FORMATS,
       extensions: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
-      maxSizeMB: 10
+      maxSizeMB: 2
     }
   });
 });
