@@ -61,9 +61,10 @@ model Session {
 model Track {
   id            String   @id @default(uuid())
   title         String
-  slug          String
-  duration      Int      // Duration in seconds
-  fileUrl       String   // Original file
+  slug          String   @default("")
+  duration      Int      @default(0) // Duration in seconds
+  audioUrl      String?  // Main audio file (base64 or URL)
+  fileUrl       String?  // Original file URL (optional)
   fileUrlLow    String?  // 64kbps for data saving
   fileUrlMedium String?  // 128kbps standard
   fileUrlHigh   String?  // 256kbps high quality
@@ -75,7 +76,7 @@ model Track {
   isExplicit    Boolean  @default(false)
   playCount     Int      @default(0)
   downloadCount Int      @default(0)
-  fileSize      Int      // In bytes
+  fileSize      Int      @default(0) // In bytes
   bitrate       Int?     // Original bitrate
   sampleRate    Int?     // Sample rate in Hz
   createdAt     DateTime @default(now())
@@ -228,4 +229,15 @@ model Download {
   @@unique([userId, trackId, quality])
   @@index([userId])
   @@index([trackId])
+}
+
+// Custom genres created by users
+model Genre {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  isCustom    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  createdById String?
+  
+  @@index([name])
 }

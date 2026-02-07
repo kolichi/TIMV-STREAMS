@@ -1,11 +1,32 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Upload as UploadIcon, Music, X, Image, Loader2, CheckCircle } from 'lucide-react';
-import { uploadApi } from '../lib/api';
+import { uploadApi, genresApi } from '../lib/api';
 import { useAuthStore } from '../store/auth';
 import clsx from 'clsx';
+
+// Extended audio format support
+const SUPPORTED_AUDIO_EXTENSIONS = [
+  '.mp3', '.wav', '.flac', '.aac', '.m4a', '.ogg', '.opus', '.webm', '.aiff', '.wma'
+];
+
+const SUPPORTED_AUDIO_MIMES = [
+  'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/x-wav',
+  'audio/flac', 'audio/x-flac', 'audio/aac', 'audio/mp4', 'audio/x-m4a',
+  'audio/ogg', 'audio/vorbis', 'audio/opus', 'audio/webm', 'audio/aiff',
+  'audio/x-aiff', 'audio/x-ms-wma'
+];
+
+// Predefined genres
+const PREDEFINED_GENRES = [
+  'Pop', 'Rock', 'Hip Hop', 'R&B', 'Electronic', 'Jazz', 'Classical',
+  'Country', 'Folk', 'Indie', 'Metal', 'Punk', 'Reggae', 'Latin',
+  'World', 'Blues', 'Soul', 'Funk', 'Disco', 'House', 'Techno',
+  'Dubstep', 'Drum & Bass', 'Trap', 'Lo-Fi', 'Ambient', 'Gospel',
+  'Afrobeat', 'K-Pop', 'J-Pop', 'Dancehall', 'Ska', 'Grunge'
+];
 
 interface UploadedFile {
   file: File;
@@ -14,6 +35,35 @@ interface UploadedFile {
   error?: string;
   result?: any;
 }
+
+// Helper to convert file to base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix (data:audio/mpeg;base64,)
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
+// Helper to get audio duration
+const getAudioDuration = (file: File): Promise<number> => {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(audio.src);
+      resolve(Math.round(audio.duration));
+    };
+    audio.onerror = () => resolve(0);
+    audio.src = URL.createObjectURL(file);
+  });
+};
 
 export function Upload() {
   const navigate = useNavigate();
@@ -24,15 +74,42 @@ export function Upload() {
   // Form state for current file
   const [title, setTitle] = useState('');
   const [genre, setGenre] = useState('');
+  const [customGenre, setCustomGenre] = useState('');
+  const [showCustomGenreInput, setShowCustomGenreInput] = useState(false);
   const [isPublic, setIsPublic] = useState(true);
   const [isExplicit, setIsExplicit] = useState(false);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState('');
+
+  // Fetch custom genres
+  const { data: genresData } = useQuery({
+    queryKey: ['genres'],
+    queryFn: async () => {
+      try {
+        const { data } = await genresApi.getAll();
+        return data;
+      } catch {
+        return { predefined: [], custom: [] };
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const uploadMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const { data } = await uploadApi.track(formData);
-      return data;
+    mutationFn: async (data: {
+      audio: string;
+      audioMimeType: string;
+      audioFileName: string;
+      title: string;
+      genre?: string;
+      isPublic?: boolean;
+      isExplicit?: boolean;
+      coverUrl?: string;
+      duration?: number;
+    }) => {
+      const { data: result } = await uploadApi.track(data);
+      return result;
     },
     onSuccess: (data) => {
       setFiles((prev) =>
@@ -42,6 +119,7 @@ export function Upload() {
             : f
         )
       );
+      setUploadProgress('');
       
       // Move to next file or complete
       if (currentFileIndex < files.length - 1) {
@@ -58,14 +136,18 @@ export function Upload() {
             : f
         )
       );
+      setUploadProgress('');
     },
   });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const audioFiles = acceptedFiles.filter((file) =>
-      file.type.startsWith('audio/') ||
-      /\.(mp3|wav|flac|aac|ogg|m4a)$/i.test(file.name)
-    );
+    const audioFiles = acceptedFiles.filter((file) => {
+      const mimeMatch = SUPPORTED_AUDIO_MIMES.includes(file.type);
+      const extMatch = SUPPORTED_AUDIO_EXTENSIONS.some(ext => 
+        file.name.toLowerCase().endsWith(ext)
+      );
+      return mimeMatch || extMatch;
+    });
     
     if (audioFiles.length === 0) return;
     
@@ -88,6 +170,8 @@ export function Upload() {
     const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
     setTitle(nameWithoutExt.replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim());
     setGenre('');
+    setCustomGenre('');
+    setShowCustomGenreInput(false);
     setIsPublic(true);
     setIsExplicit(false);
   };
@@ -95,9 +179,10 @@ export function Upload() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'audio/*': ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a'],
+      'audio/*': SUPPORTED_AUDIO_EXTENSIONS,
     },
     multiple: true,
+    maxSize: 50 * 1024 * 1024, // 50MB limit
   });
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,28 +198,75 @@ export function Upload() {
   const handleUpload = async () => {
     if (files.length === 0 || !title) return;
     
+    const currentFile = files[currentFileIndex];
+    
     setFiles((prev) =>
       prev.map((f, i) =>
         i === currentFileIndex ? { ...f, status: 'uploading' } : f
       )
     );
     
-    const formData = new FormData();
-    formData.append('audio', files[currentFileIndex].file);
-    formData.append('title', title);
-    formData.append('genre', genre);
-    formData.append('isPublic', String(isPublic));
-    formData.append('isExplicit', String(isExplicit));
-    
-    if (coverFile) {
-      // Upload cover first
-      const coverFormData = new FormData();
-      coverFormData.append('cover', coverFile);
-      const { data: coverData } = await uploadApi.cover(coverFormData);
-      formData.append('coverUrl', coverData.coverUrl);
+    try {
+      setUploadProgress('Reading audio file...');
+      
+      // Convert audio to base64
+      const audioBase64 = await fileToBase64(currentFile.file);
+      
+      setUploadProgress('Getting duration...');
+      // Get audio duration
+      const duration = await getAudioDuration(currentFile.file);
+      
+      // Upload cover if exists
+      let coverUrl: string | undefined;
+      if (coverFile) {
+        setUploadProgress('Uploading cover art...');
+        const coverBase64 = await fileToBase64(coverFile);
+        const { data: coverData } = await uploadApi.cover({
+          image: coverBase64,
+          mimeType: coverFile.type,
+        });
+        coverUrl = coverData.coverUrl;
+      }
+      
+      setUploadProgress('Uploading track...');
+      
+      // Determine the actual genre to use
+      const finalGenre = showCustomGenreInput && customGenre.trim() 
+        ? customGenre.trim() 
+        : genre;
+      
+      // If it's a custom genre, create it first
+      if (showCustomGenreInput && customGenre.trim()) {
+        try {
+          await genresApi.create(customGenre.trim());
+        } catch {
+          // Genre might already exist, that's ok
+        }
+      }
+      
+      // Upload track
+      uploadMutation.mutate({
+        audio: audioBase64,
+        audioMimeType: currentFile.file.type || 'audio/mpeg',
+        audioFileName: currentFile.file.name,
+        title,
+        genre: finalGenre || undefined,
+        isPublic,
+        isExplicit,
+        coverUrl,
+        duration,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      setFiles((prev) =>
+        prev.map((f, i) =>
+          i === currentFileIndex
+            ? { ...f, status: 'error', error: 'Failed to process file' }
+            : f
+        )
+      );
+      setUploadProgress('');
     }
-    
-    uploadMutation.mutate(formData);
   };
 
   const removeFile = (index: number) => {
@@ -142,9 +274,28 @@ export function Upload() {
     if (index === currentFileIndex && files.length > 1) {
       const newIndex = index === 0 ? 0 : index - 1;
       setCurrentFileIndex(newIndex);
-      prepareFormForFile(files[newIndex].file);
+      if (files[newIndex]) {
+        prepareFormForFile(files[newIndex].file);
+      }
     }
   };
+
+  const handleGenreChange = (value: string) => {
+    if (value === '__custom__') {
+      setShowCustomGenreInput(true);
+      setGenre('');
+    } else {
+      setShowCustomGenreInput(false);
+      setCustomGenre('');
+      setGenre(value);
+    }
+  };
+
+  // Combine predefined and custom genres
+  const allGenres = [
+    ...PREDEFINED_GENRES,
+    ...(genresData?.custom?.map((g: any) => g.name) || [])
+  ].filter((v, i, a) => a.indexOf(v) === i).sort();
 
   // Auth check
   if (!isAuthenticated) {
@@ -187,7 +338,10 @@ export function Upload() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Upload Music</h1>
+      <h1 className="text-3xl font-bold mb-2">Upload Music</h1>
+      <p className="text-surface-400 mb-8">
+        Maximum file size: 50MB • Supported formats: MP3, WAV, FLAC, AAC, M4A, OGG, Opus, WebM, AIFF, WMA
+      </p>
 
       {/* Dropzone */}
       <div
@@ -205,7 +359,7 @@ export function Upload() {
           {isDragActive ? 'Drop your files here' : 'Drag & drop audio files'}
         </p>
         <p className="text-surface-400 text-sm">
-          or click to browse • MP3, WAV, FLAC, AAC, OGG supported
+          or click to browse • All major audio formats supported
         </p>
       </div>
 
@@ -238,9 +392,9 @@ export function Upload() {
                 <p className="font-medium truncate">{file.file.name}</p>
                 <p className="text-sm text-surface-400">
                   {file.status === 'done'
-                    ? 'Uploaded'
+                    ? 'Uploaded successfully!'
                     : file.status === 'uploading'
-                    ? 'Uploading...'
+                    ? uploadProgress || 'Uploading...'
                     : file.status === 'processing'
                     ? 'Processing audio...'
                     : file.status === 'error'
@@ -296,7 +450,7 @@ export function Upload() {
                 />
               </label>
               <p className="text-xs text-surface-400 mt-2">
-                Recommended: 500x500px
+                Recommended: 500x500px • JPEG, PNG, WebP
               </p>
             </div>
 
@@ -315,29 +469,42 @@ export function Upload() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">Genre</label>
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="w-full px-4 py-3 bg-surface-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">Select genre</option>
-                  <option value="pop">Pop</option>
-                  <option value="rock">Rock</option>
-                  <option value="hip-hop">Hip Hop</option>
-                  <option value="r&b">R&B</option>
-                  <option value="electronic">Electronic</option>
-                  <option value="jazz">Jazz</option>
-                  <option value="classical">Classical</option>
-                  <option value="country">Country</option>
-                  <option value="folk">Folk</option>
-                  <option value="indie">Indie</option>
-                  <option value="metal">Metal</option>
-                  <option value="punk">Punk</option>
-                  <option value="reggae">Reggae</option>
-                  <option value="latin">Latin</option>
-                  <option value="world">World</option>
-                  <option value="other">Other</option>
-                </select>
+                {!showCustomGenreInput ? (
+                  <select
+                    value={genre}
+                    onChange={(e) => handleGenreChange(e.target.value)}
+                    className="w-full px-4 py-3 bg-surface-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="">Select genre</option>
+                    {allGenres.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                    <option value="__custom__">➕ Add custom genre...</option>
+                  </select>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customGenre}
+                      onChange={(e) => setCustomGenre(e.target.value)}
+                      placeholder="Enter your genre name"
+                      className="flex-1 px-4 py-3 bg-surface-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => {
+                        setShowCustomGenreInput(false);
+                        setCustomGenre('');
+                      }}
+                      className="px-4 py-3 bg-surface-600 rounded-lg hover:bg-surface-500"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+                <p className="text-xs text-surface-400 mt-1">
+                  Can't find your genre? Select "Add custom genre" to create your own!
+                </p>
               </div>
 
               <div className="flex items-center gap-6">
@@ -366,13 +533,13 @@ export function Upload() {
 
           <button
             onClick={handleUpload}
-            disabled={!title || uploadMutation.isPending}
+            disabled={!title || uploadMutation.isPending || files[currentFileIndex]?.status === 'uploading'}
             className="mt-6 w-full py-4 bg-gradient-to-r from-primary-500 to-accent-500 rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {uploadMutation.isPending ? (
+            {uploadMutation.isPending || files[currentFileIndex]?.status === 'uploading' ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Uploading...
+                {uploadProgress || 'Uploading...'}
               </>
             ) : (
               <>
@@ -390,7 +557,7 @@ export function Upload() {
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">All tracks uploaded!</h2>
           <p className="text-surface-400 mb-6">
-            Your music is being processed and will be available shortly
+            Your music is now live and ready to stream
           </p>
           <div className="flex justify-center gap-4">
             <button
@@ -398,6 +565,9 @@ export function Upload() {
                 setFiles([]);
                 setCurrentFileIndex(0);
                 setTitle('');
+                setGenre('');
+                setCustomGenre('');
+                setShowCustomGenreInput(false);
                 setCoverFile(null);
                 setCoverPreview(null);
               }}
@@ -406,7 +576,7 @@ export function Upload() {
               Upload More
             </button>
             <button
-              onClick={() => navigate(`/artist/${user.username}`)}
+              onClick={() => navigate(`/artist/${user?.username}`)}
               className="px-6 py-3 bg-primary-500 rounded-full font-semibold hover:bg-primary-600 transition-colors"
             >
               View Profile

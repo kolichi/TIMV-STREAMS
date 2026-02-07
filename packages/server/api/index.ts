@@ -18,7 +18,7 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret
 
 // CORS - keep it simple for serverless
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '100mb' })); // Increased for audio file uploads
 
 // Auth middleware
 const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
@@ -426,6 +426,241 @@ app.get('/api/users/:username/tracks', async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch tracks' });
   }
+});
+
+// ============ GENRE ROUTES ============
+
+// Get all genres (predefined + custom)
+app.get('/api/genres', async (req: Request, res: Response) => {
+  try {
+    // Predefined genres
+    const predefinedGenres = [
+      'Pop', 'Rock', 'Hip Hop', 'R&B', 'Electronic', 'Jazz', 'Classical', 
+      'Country', 'Folk', 'Indie', 'Metal', 'Punk', 'Reggae', 'Latin', 
+      'World', 'Blues', 'Soul', 'Funk', 'Disco', 'House', 'Techno', 
+      'Dubstep', 'Drum & Bass', 'Trap', 'Lo-Fi', 'Ambient', 'Gospel',
+      'Afrobeat', 'K-Pop', 'J-Pop', 'Dancehall', 'Ska', 'Grunge'
+    ];
+    
+    // Get custom genres from database
+    const customGenres = await prisma.genre.findMany({
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, isCustom: true }
+    });
+    
+    res.json({ 
+      predefined: predefinedGenres.map(g => ({ name: g, isCustom: false })),
+      custom: customGenres 
+    });
+  } catch (error) {
+    console.error('Genres error:', error);
+    res.status(500).json({ error: 'Failed to fetch genres' });
+  }
+});
+
+// Create custom genre
+app.post('/api/genres', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { name } = req.body;
+    
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Genre name must be at least 2 characters' });
+    }
+    
+    const normalized = name.trim();
+    
+    // Check if already exists
+    const existing = await prisma.genre.findFirst({
+      where: { name: { equals: normalized, mode: 'insensitive' } }
+    });
+    
+    if (existing) {
+      return res.json(existing);
+    }
+    
+    const genre = await prisma.genre.create({
+      data: {
+        name: normalized,
+        isCustom: true,
+        createdById: (req as any).userId
+      }
+    });
+    
+    res.status(201).json(genre);
+  } catch (error) {
+    console.error('Create genre error:', error);
+    res.status(500).json({ error: 'Failed to create genre' });
+  }
+});
+
+// ============ UPLOAD ROUTES ============
+
+// Supported audio formats
+const SUPPORTED_AUDIO_FORMATS = [
+  'audio/mpeg',           // MP3
+  'audio/mp3',            // MP3 alternate
+  'audio/wav',            // WAV
+  'audio/wave',           // WAV alternate
+  'audio/x-wav',          // WAV alternate
+  'audio/flac',           // FLAC
+  'audio/x-flac',         // FLAC alternate
+  'audio/aac',            // AAC
+  'audio/mp4',            // M4A
+  'audio/x-m4a',          // M4A alternate
+  'audio/ogg',            // OGG
+  'audio/vorbis',         // OGG Vorbis
+  'audio/opus',           // Opus
+  'audio/webm',           // WebM Audio
+  'audio/aiff',           // AIFF
+  'audio/x-aiff',         // AIFF alternate
+  'audio/basic',          // AU
+  'audio/x-ms-wma',       // WMA
+];
+
+const SUPPORTED_IMAGE_FORMATS = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
+
+// Upload cover art (base64)
+app.post('/api/upload/cover', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { image, mimeType } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+    
+    // Validate image type
+    if (mimeType && !SUPPORTED_IMAGE_FORMATS.includes(mimeType)) {
+      return res.status(400).json({ error: 'Unsupported image format. Use JPEG, PNG, WebP, or GIF' });
+    }
+    
+    // For now, return the base64 as data URL (could integrate Cloudinary/S3 later)
+    const coverUrl = `data:${mimeType || 'image/jpeg'};base64,${image}`;
+    
+    res.json({ coverUrl, success: true });
+  } catch (error) {
+    console.error('Cover upload error:', error);
+    res.status(500).json({ error: 'Failed to upload cover' });
+  }
+});
+
+// Upload avatar (base64)
+app.post('/api/upload/avatar', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { image, mimeType } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: 'No image provided' });
+    }
+    
+    if (mimeType && !SUPPORTED_IMAGE_FORMATS.includes(mimeType)) {
+      return res.status(400).json({ error: 'Unsupported image format' });
+    }
+    
+    const avatarUrl = `data:${mimeType || 'image/jpeg'};base64,${image}`;
+    
+    // Update user avatar
+    await prisma.user.update({
+      where: { id: (req as any).userId },
+      data: { avatarUrl }
+    });
+    
+    res.json({ avatarUrl, success: true });
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    res.status(500).json({ error: 'Failed to upload avatar' });
+  }
+});
+
+// Upload track (base64)
+app.post('/api/upload/track', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { 
+      audio, 
+      audioMimeType,
+      audioFileName,
+      title, 
+      genre, 
+      isPublic = true, 
+      isExplicit = false,
+      coverUrl,
+      duration 
+    } = req.body;
+    
+    if (!audio) {
+      return res.status(400).json({ error: 'No audio file provided' });
+    }
+    
+    if (!title || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    
+    // Validate audio type
+    const normalizedMimeType = audioMimeType?.toLowerCase() || 'audio/mpeg';
+    if (!SUPPORTED_AUDIO_FORMATS.includes(normalizedMimeType)) {
+      return res.status(400).json({ 
+        error: `Unsupported audio format: ${audioMimeType}. Supported: MP3, WAV, FLAC, AAC, M4A, OGG, Opus, WebM, AIFF, WMA` 
+      });
+    }
+    
+    // Check file size (base64 is ~33% larger, so 50MB file = ~67MB base64)
+    const approximateSize = (audio.length * 3) / 4; // Approximate original size
+    const maxSize = 50 * 1024 * 1024; // 50MB limit
+    
+    if (approximateSize > maxSize) {
+      return res.status(400).json({ error: 'File too large. Maximum size is 50MB' });
+    }
+    
+    // Create audio URL (data URL for now - could use cloud storage)
+    const audioUrl = `data:${normalizedMimeType};base64,${audio}`;
+    
+    // Create track in database
+    const track = await prisma.track.create({
+      data: {
+        title: title.trim(),
+        artistId: (req as any).userId,
+        audioUrl,
+        coverUrl: coverUrl || null,
+        duration: duration || 0,
+        genre: genre || null,
+        isPublic: isPublic === true || isPublic === 'true',
+        isExplicit: isExplicit === true || isExplicit === 'true',
+      },
+      include: {
+        artist: { select: { id: true, username: true, displayName: true, avatarUrl: true } }
+      }
+    });
+    
+    res.status(201).json({ 
+      success: true, 
+      track,
+      message: 'Track uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Track upload error:', error);
+    res.status(500).json({ error: 'Failed to upload track' });
+  }
+});
+
+// Get supported formats
+app.get('/api/upload/formats', (req: Request, res: Response) => {
+  res.json({
+    audio: {
+      mimeTypes: SUPPORTED_AUDIO_FORMATS,
+      extensions: ['.mp3', '.wav', '.flac', '.aac', '.m4a', '.ogg', '.opus', '.webm', '.aiff', '.wma'],
+      maxSizeMB: 50
+    },
+    image: {
+      mimeTypes: SUPPORTED_IMAGE_FORMATS,
+      extensions: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
+      maxSizeMB: 10
+    }
+  });
 });
 
 // 404 handler

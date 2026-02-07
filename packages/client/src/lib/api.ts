@@ -78,20 +78,33 @@ export const tracksApi = {
   delete: (id: string) => api.delete(`/tracks/${id}`),
 };
 
-// Upload API
+// Upload API - now using base64 for serverless compatibility
 export const uploadApi = {
-  track: (formData: FormData) =>
-    api.post('/upload/track', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  cover: (formData: FormData) =>
-    api.post('/upload/cover', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
-  avatar: (formData: FormData) =>
-    api.post('/upload/avatar', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+  track: (data: {
+    audio: string;
+    audioMimeType: string;
+    audioFileName: string;
+    title: string;
+    genre?: string;
+    isPublic?: boolean;
+    isExplicit?: boolean;
+    coverUrl?: string;
+    duration?: number;
+  }) => api.post('/upload/track', data),
+  
+  cover: (data: { image: string; mimeType: string }) =>
+    api.post('/upload/cover', data),
+  
+  avatar: (data: { image: string; mimeType: string }) =>
+    api.post('/upload/avatar', data),
+    
+  getFormats: () => api.get('/upload/formats'),
+};
+
+// Genres API
+export const genresApi = {
+  getAll: () => api.get('/genres'),
+  create: (name: string) => api.post('/genres', { name }),
 };
 
 // Users API
