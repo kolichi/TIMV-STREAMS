@@ -8,7 +8,10 @@ const prisma = new PrismaClient();
 
 // Security & CORS
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
+app.use(cors({ 
+  origin: true, // Allow all origins for now
+  credentials: true 
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // Health check
