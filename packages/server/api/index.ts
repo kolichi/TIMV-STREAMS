@@ -664,9 +664,13 @@ app.post('/api/upload/track', authMiddleware, async (req: Request, res: Response
       track,
       message: 'Track uploaded successfully'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Track upload error:', error);
-    res.status(500).json({ error: 'Failed to upload track' });
+    res.status(500).json({ 
+      error: 'Failed to upload track', 
+      details: error?.message || 'Unknown error',
+      code: error?.code
+    });
   }
 });
 
