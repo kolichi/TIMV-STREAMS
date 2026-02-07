@@ -63,8 +63,7 @@ model Track {
   title         String
   slug          String   @default("")
   duration      Int      @default(0) // Duration in seconds
-  audioUrl      String?  // Main audio file (base64 or URL)
-  fileUrl       String?  // Original file URL (optional)
+  fileUrl       String   @default("") // Original file (required for DB)
   fileUrlLow    String?  // 64kbps for data saving
   fileUrlMedium String?  // 128kbps standard
   fileUrlHigh   String?  // 256kbps high quality
