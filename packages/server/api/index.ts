@@ -642,14 +642,16 @@ app.post('/api/upload/track', authMiddleware, async (req: Request, res: Response
       .replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
     
     // Create track in database
+    // Note: Using fileUrl instead of audioUrl for database compatibility
     const track = await prisma.track.create({
       data: {
         title: title.trim(),
         slug,
         artistId: (req as any).userId,
-        audioUrl,
+        fileUrl: audioUrl, // Using fileUrl column which exists in current schema
         coverUrl: coverUrl || null,
         duration: duration || 0,
+        fileSize: Math.round((audio.length * 3) / 4), // Approximate original size
         genre: genre || null,
         isPublic: isPublic === true || isPublic === 'true',
         isExplicit: isExplicit === true || isExplicit === 'true',
