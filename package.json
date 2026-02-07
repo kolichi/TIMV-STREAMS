@@ -1,0 +1,26 @@
+{
+  "name": "stream-music-platform",
+  "version": "1.0.0",
+  "description": "High-performance music streaming platform with easy uploads",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --workspace=@stream/server",
+    "dev:client": "npm run dev --workspace=@stream/client",
+    "build": "npm run build --workspaces",
+    "start": "npm run start --workspace=@stream/server",
+    "db:migrate": "npm run migrate --workspace=@stream/server",
+    "db:seed": "npm run seed --workspace=@stream/server",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

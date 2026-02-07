@@ -1,0 +1,231 @@
+// Prisma Schema for Stream Music Platform
+// This schema defines all database models for the streaming service
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User account model
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String    @unique
+  passwordHash  String
+  displayName   String?
+  avatarUrl     String?
+  bio           String?
+  isArtist      Boolean   @default(false)
+  isVerified    Boolean   @default(false)
+  isPremium     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
+  tracks        Track[]
+  albums        Album[]
+  playlists     Playlist[]
+  likedTracks   LikedTrack[]
+  following     Follow[]     @relation("following")
+  followers     Follow[]     @relation("followers")
+  playHistory   PlayHistory[]
+  downloads     Download[]
+  sessions      Session[]
+
+  @@index([email])
+  @@index([username])
+}
+
+// Session management for refresh tokens
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshToken String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+// Music track model
+model Track {
+  id            String   @id @default(uuid())
+  title         String
+  slug          String
+  duration      Int      // Duration in seconds
+  fileUrl       String   // Original file
+  fileUrlLow    String?  // 64kbps for data saving
+  fileUrlMedium String?  // 128kbps standard
+  fileUrlHigh   String?  // 256kbps high quality
+  waveformData  Json?    // Pre-computed waveform for visualization
+  coverUrl      String?
+  genre         String?
+  releaseDate   DateTime?
+  isPublic      Boolean  @default(true)
+  isExplicit    Boolean  @default(false)
+  playCount     Int      @default(0)
+  downloadCount Int      @default(0)
+  fileSize      Int      // In bytes
+  bitrate       Int?     // Original bitrate
+  sampleRate    Int?     // Sample rate in Hz
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  artistId      String
+  artist        User     @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  albumId       String?
+  album         Album?   @relation(fields: [albumId], references: [id], onDelete: SetNull)
+  playlistTracks PlaylistTrack[]
+  likedBy       LikedTrack[]
+  playHistory   PlayHistory[]
+  downloads     Download[]
+
+  @@unique([artistId, slug])
+  @@index([artistId])
+  @@index([albumId])
+  @@index([genre])
+  @@index([playCount])
+  @@index([createdAt])
+}
+
+// Album model
+model Album {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String
+  description String?
+  coverUrl    String?
+  releaseDate DateTime?
+  albumType   AlbumType @default(ALBUM)
+  isPublic    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  artistId    String
+  artist      User      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  tracks      Track[]
+
+  @@unique([artistId, slug])
+  @@index([artistId])
+}
+
+enum AlbumType {
+  ALBUM
+  EP
+  SINGLE
+  COMPILATION
+}
+
+// Playlist model
+model Playlist {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String
+  description String?
+  coverUrl    String?
+  isPublic    Boolean  @default(true)
+  isCollaborative Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tracks      PlaylistTrack[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([isPublic])
+}
+
+// Junction table for playlist tracks with ordering
+model PlaylistTrack {
+  id         String   @id @default(uuid())
+  position   Int
+  addedAt    DateTime @default(now())
+
+  playlistId String
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  trackId    String
+  track      Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, trackId])
+  @@index([playlistId])
+  @@index([trackId])
+}
+
+// User liked tracks
+model LikedTrack {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId   String
+  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId])
+  @@index([userId])
+  @@index([trackId])
+}
+
+// User follow relationships
+model Follow {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+
+  followerId  String
+  follower    User     @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// Play history for recommendations and stats
+model PlayHistory {
+  id          String   @id @default(uuid())
+  playedAt    DateTime @default(now())
+  duration    Int      // How long they listened (seconds)
+  completed   Boolean  @default(false)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId     String
+  track       Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([trackId])
+  @@index([playedAt])
+}
+
+// Offline downloads tracking
+model Download {
+  id           String   @id @default(uuid())
+  quality      String   // low, medium, high
+  downloadedAt DateTime @default(now())
+  expiresAt    DateTime // For premium expiry management
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId      String
+  track        Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId, quality])
+  @@index([userId])
+  @@index([trackId])
+}

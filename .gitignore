@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+uploads/
+!uploads/README.md
+*.log
+.DS_Store
+coverage/
+.turbo/
