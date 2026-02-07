@@ -636,10 +636,16 @@ app.post('/api/upload/track', authMiddleware, async (req: Request, res: Response
     // Create audio URL (data URL for now - could use cloud storage)
     const audioUrl = `data:${normalizedMimeType};base64,${audio}`;
     
+    // Generate a slug from title
+    const slug = title.trim().toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') + '-' + Date.now().toString(36);
+    
     // Create track in database
     const track = await prisma.track.create({
       data: {
         title: title.trim(),
+        slug,
         artistId: (req as any).userId,
         audioUrl,
         coverUrl: coverUrl || null,
