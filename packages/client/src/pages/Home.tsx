@@ -5,15 +5,19 @@ import { ChevronRight, TrendingUp, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export function Home() {
-  const { data: trending, isLoading: trendingLoading } = useQuery({
+  const { data: trendingData, isLoading: trendingLoading } = useQuery({
     queryKey: ['tracks', 'trending'],
     queryFn: () => tracksApi.getTrending().then((res) => res.data),
   });
 
-  const { data: newReleases, isLoading: newLoading } = useQuery({
+  const { data: newData, isLoading: newLoading } = useQuery({
     queryKey: ['tracks', 'new'],
     queryFn: () => tracksApi.getNew().then((res) => res.data),
   });
+
+  // Extract tracks array from response
+  const trending = trendingData?.tracks || [];
+  const newReleases = newData?.tracks || [];
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
