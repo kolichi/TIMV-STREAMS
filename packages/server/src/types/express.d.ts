@@ -9,6 +9,7 @@ declare global {
       username: string;
       isArtist: boolean;
       isPremium: boolean;
+
       role?: string;
     }
     

@@ -24,14 +24,14 @@ router.get('/', async (req, res, next) => {
     });
 
     // Combine default and custom genres
-    const customGenreNames = customGenres.map(g => g.name);
+    const customGenreNames = customGenres.map((g: { name: string }) => g.name);
     const allGenres = [
       ...DEFAULT_GENRES.map(name => ({ 
         id: name.toLowerCase().replace(/\s+/g, '-'), 
         name, 
         isCustom: false 
       })),
-      ...customGenres.map(g => ({ 
+      ...customGenres.map((g: { id: string; name: string; isCustom: boolean }) => ({ 
         id: g.id, 
         name: g.name, 
         isCustom: g.isCustom 

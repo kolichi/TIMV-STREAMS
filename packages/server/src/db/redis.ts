@@ -4,7 +4,7 @@ import { config } from '../config/index.js';
 // Redis client for caching
 export const redis = new Redis(config.redisUrl, {
   maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
+  retryStrategy: (times: number) => Math.min(times * 100, 3000),
   lazyConnect: true,
 });
 

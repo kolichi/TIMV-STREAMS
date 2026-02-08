@@ -63,7 +63,7 @@ playlistRoutes.get('/:playlistId', optionalAuth, async (req: Request, res: Respo
     
     // Calculate total duration
     const totalDuration = playlist.tracks.reduce(
-      (acc, pt) => acc + pt.track.duration,
+      (acc: number, pt: { track: { duration: number } }) => acc + pt.track.duration,
       0
     );
     
