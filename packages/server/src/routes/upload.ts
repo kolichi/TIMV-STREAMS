@@ -11,7 +11,6 @@ import { prisma } from '../db/client.js';
 import { config } from '../config/index.js';
 import { errors } from '../middleware/errorHandler.js';
 import { authenticate, requireArtist } from '../middleware/auth.js';
-import '../types/express.js';
 import { cache, cacheKeys } from '../db/redis.js';
 
 export const uploadRoutes = Router();

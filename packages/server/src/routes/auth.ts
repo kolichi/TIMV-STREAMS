@@ -8,7 +8,6 @@ import { prisma } from '../db/client.js';
 import { config } from '../config/index.js';
 import { errors } from '../middleware/errorHandler.js';
 import { authenticate } from '../middleware/auth.js';
-import '../types/express.js';
 
 export const authRoutes = Router();
 

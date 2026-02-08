@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { errors } from '../middleware/errorHandler.js';
 import { authenticate, optionalAuth } from '../middleware/auth.js';
-import '../types/express.js';
 
 export const albumRoutes = Router();
 

@@ -6,7 +6,6 @@ import { cache, cacheKeys } from '../db/redis.js';
 import { config } from '../config/index.js';
 import { errors } from '../middleware/errorHandler.js';
 import { optionalAuth } from '../middleware/auth.js';
-import '../types/express.js';
 
 export const streamRoutes = Router();
 

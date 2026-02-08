@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { prisma } from '../db/client.js';
 import { errors } from './errorHandler.js';
-import '../types/express.js';
 
 // Use Express.Request directly since we've augmented it globally
 export type AuthRequest = Request;

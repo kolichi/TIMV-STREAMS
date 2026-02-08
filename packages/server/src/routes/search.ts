@@ -2,7 +2,6 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../db/client.js';
 import { cache, cacheKeys } from '../db/redis.js';
 import { optionalAuth } from '../middleware/auth.js';
-import '../types/express.js';
 
 export const searchRoutes = Router();
 
