@@ -11,6 +11,8 @@ import { Album } from './pages/Album';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Settings } from './pages/Settings';
+import { AuthCallback } from './pages/AuthCallback';
+import { AuthVerify } from './pages/AuthVerify';
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/auth/verify" element={<AuthVerify />} />
     </Routes>
   );
 }

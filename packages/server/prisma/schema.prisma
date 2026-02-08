@@ -1,4 +1,4 @@
-// Prisma Schema for Stream Music Platform
+// Prisma Schema for Izwei Music Platform
 // This schema defines all database models for the streaming service
 
 generator client {
@@ -15,16 +15,21 @@ model User {
   id            String    @id @default(uuid())
   email         String    @unique
   username      String    @unique
-  passwordHash  String
+  passwordHash  String?   // Optional for OAuth users
   displayName   String?
   avatarUrl     String?
   bio           String?
   isArtist      Boolean   @default(false)
   isVerified    Boolean   @default(false)
   isPremium     Boolean   @default(false)
+  emailVerified Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
+  
+  // OAuth providers
+  facebookId    String?   @unique
+  googleId      String?   @unique
 
   // Relations
   tracks        Track[]
@@ -36,9 +41,28 @@ model User {
   playHistory   PlayHistory[]
   downloads     Download[]
   sessions      Session[]
+  magicLinks    MagicLink[]
 
   @@index([email])
   @@index([username])
+  @@index([facebookId])
+  @@index([googleId])
+}
+
+// Magic link tokens for email authentication
+model MagicLink {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  email     String
+  userId    String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([email])
 }
 
 // Session management for refresh tokens

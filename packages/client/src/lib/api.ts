@@ -64,6 +64,14 @@ export const authApi = {
     api.post('/auth/logout', { refreshToken }),
   
   me: () => api.get('/auth/me'),
+  
+  // Magic link authentication
+  magicLink: (email: string) =>
+    api.post('/auth/magic-link', { email }),
+  
+  // Get available auth providers
+  getProviders: () =>
+    api.get('/auth/providers'),
 };
 
 // Tracks API

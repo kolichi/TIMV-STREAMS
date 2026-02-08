@@ -30,7 +30,7 @@ export function Sidebar({ className }: SidebarProps) {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
             <Music2 className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xl font-bold gradient-text">Stream</span>
+          <span className="text-xl font-bold gradient-text">Izwei Music</span>
         </NavLink>
       </div>
 

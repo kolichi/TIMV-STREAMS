@@ -65,7 +65,7 @@ export function Register() {
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
             <Music2 className="w-7 h-7 text-white" />
           </div>
-          <span className="text-3xl font-bold gradient-text">Stream</span>
+          <span className="text-3xl font-bold gradient-text">Izwei Music</span>
         </Link>
 
         {/* Form */}
