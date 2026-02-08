@@ -155,8 +155,11 @@ export const searchApi = {
 
 // Stream API
 export const streamApi = {
-  getStreamUrl: (trackId: string, quality: 'low' | 'medium' | 'high' = 'medium') =>
-    `/api/stream/${trackId}?quality=${quality}`,
+  getStreamUrl: (trackId: string, quality: 'low' | 'medium' | 'high' = 'medium') => {
+    // Use full backend URL for streaming (not relative path)
+    const baseUrl = import.meta.env.VITE_API_URL || '';
+    return `${baseUrl}/api/stream/${trackId}?quality=${quality}`;
+  },
   complete: (trackId: string, duration: number) =>
     api.post(`/stream/${trackId}/complete`, { duration }),
   getWaveform: (trackId: string) => api.get(`/stream/${trackId}/waveform`),

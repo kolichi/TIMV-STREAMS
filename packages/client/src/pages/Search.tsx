@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search as SearchIcon, X, Mic } from 'lucide-react';
-import { searchApi } from '../lib/api';
+import { searchApi, tracksApi } from '../lib/api';
 import { TrackCard } from '../components/TrackCard';
 import { Link } from 'react-router-dom';
 import clsx from 'clsx';
@@ -29,6 +29,13 @@ export function Search() {
     }, 300);
     return () => clearTimeout(timer);
   }, [query, type]);
+
+  // Fetch all tracks when no search query (browse mode)
+  const { data: allTracks, isLoading: allTracksLoading } = useQuery({
+    queryKey: ['tracks', 'all'],
+    queryFn: () => tracksApi.getNew().then((res) => res.data),
+    enabled: !debouncedQuery,
+  });
 
   const { data: results, isLoading } = useQuery({
     queryKey: ['search', debouncedQuery, type],
@@ -96,12 +103,34 @@ export function Search() {
 
       {/* Results */}
       {!debouncedQuery ? (
-        <div className="text-center py-20">
-          <SearchIcon className="w-16 h-16 text-surface-600 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Search for music</h2>
-          <p className="text-surface-400">
-            Find your favorite tracks, artists, and playlists
-          </p>
+        // Browse mode - show all tracks
+        <div>
+          <h2 className="text-2xl font-bold mb-6">Browse All Tracks</h2>
+          {allTracksLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="bg-surface-800 rounded-xl p-4">
+                  <div className="aspect-square skeleton rounded-lg mb-3" />
+                  <div className="h-4 skeleton rounded mb-2" />
+                  <div className="h-3 skeleton rounded w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : allTracks?.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {allTracks.map((track: any) => (
+                <TrackCard key={track.id} track={track} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <SearchIcon className="w-16 h-16 text-surface-600 mx-auto mb-4" />
+              <h2 className="text-xl font-bold mb-2">No tracks yet</h2>
+              <p className="text-surface-400">
+                Be the first to upload music!
+              </p>
+            </div>
+          )}
         </div>
       ) : isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
