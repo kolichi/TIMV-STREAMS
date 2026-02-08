@@ -187,8 +187,8 @@ searchRoutes.get('/suggestions', async (req, res, next) => {
     ]);
     
     const suggestions = [
-      ...tracks.map(t => ({ type: 'track', value: t.title })),
-      ...artists.map(a => ({ type: 'artist', value: a.displayName || a.username })),
+      ...tracks.map((t: any) => ({ type: 'track', value: t.title })),
+      ...artists.map((a: any) => ({ type: 'artist', value: a.displayName || a.username })),
     ];
     
     res.json(suggestions.slice(0, 8));

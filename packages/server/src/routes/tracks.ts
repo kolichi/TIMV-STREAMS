@@ -233,7 +233,7 @@ trackRoutes.get('/liked/me', authenticate, async (req: Request, res: Response, n
     ]);
     
     res.json({
-      tracks: tracks.map(lt => ({ ...lt.track, likedAt: lt.createdAt })),
+      tracks: tracks.map((lt: any) => ({ ...lt.track, likedAt: lt.createdAt })),
       pagination: {
         page,
         limit,

@@ -69,7 +69,7 @@ playlistRoutes.get('/:playlistId', optionalAuth, async (req: Request, res: Respo
     
     res.json({
       ...playlist,
-      tracks: playlist.tracks.map(pt => ({
+      tracks: playlist.tracks.map((pt: any) => ({
         ...pt.track,
         addedAt: pt.addedAt,
         position: pt.position,
