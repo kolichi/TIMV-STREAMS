@@ -3,20 +3,14 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { prisma } from '../db/client.js';
 import { errors } from './errorHandler.js';
+import '../types/express.js';
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    username: string;
-    isArtist: boolean;
-    isPremium: boolean;
-  };
-}
+// Use Express.Request directly since we've augmented it globally
+export type AuthRequest = Request;
 
 // Verify JWT token
 export const authenticate = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -65,7 +59,7 @@ export const authenticate = async (
 
 // Optional authentication (doesn't fail if no token)
 export const optionalAuth = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -106,7 +100,7 @@ export const optionalAuth = async (
 
 // Require artist role
 export const requireArtist = (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -118,7 +112,7 @@ export const requireArtist = (
 
 // Require premium subscription
 export const requirePremium = (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {

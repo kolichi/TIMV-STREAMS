@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { v4 as uuid } from 'uuid';
@@ -10,7 +10,8 @@ import sharp from 'sharp';
 import { prisma } from '../db/client.js';
 import { config } from '../config/index.js';
 import { errors } from '../middleware/errorHandler.js';
-import { authenticate, requireArtist, AuthRequest } from '../middleware/auth.js';
+import { authenticate, requireArtist } from '../middleware/auth.js';
+import '../types/express.js';
 import { cache, cacheKeys } from '../db/redis.js';
 
 export const uploadRoutes = Router();
@@ -202,7 +203,7 @@ uploadRoutes.post(
   authenticate,
   requireArtist,
   audioUpload.single('audio'),
-  async (req: AuthRequest, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
         throw errors.badRequest('No audio file provided');
@@ -296,7 +297,7 @@ uploadRoutes.post(
   '/cover',
   authenticate,
   imageUpload.single('cover'),
-  async (req: AuthRequest, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
         throw errors.badRequest('No image file provided');
@@ -324,7 +325,7 @@ uploadRoutes.post(
   '/avatar',
   authenticate,
   imageUpload.single('avatar'),
-  async (req: AuthRequest, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
         throw errors.badRequest('No image file provided');

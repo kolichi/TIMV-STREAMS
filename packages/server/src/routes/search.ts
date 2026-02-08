@@ -1,12 +1,13 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../db/client.js';
 import { cache, cacheKeys } from '../db/redis.js';
-import { optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/auth.js';
+import '../types/express.js';
 
 export const searchRoutes = Router();
 
 // Full-text search across tracks, artists, albums, playlists
-searchRoutes.get('/', optionalAuth, async (req: AuthRequest, res, next) => {
+searchRoutes.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const query = (req.query.q as string || '').trim();
     const type = req.query.type as string; // 'tracks', 'artists', 'albums', 'playlists', or undefined for all

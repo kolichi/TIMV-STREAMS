@@ -1,13 +1,14 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { errors } from '../middleware/errorHandler.js';
-import { authenticate, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
+import '../types/express.js';
 
 export const userRoutes = Router();
 
 // Get user profile
-userRoutes.get('/:username', optionalAuth, async (req: AuthRequest, res, next) => {
+userRoutes.get('/:username', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { username } = req.params;
     
@@ -59,7 +60,7 @@ userRoutes.get('/:username', optionalAuth, async (req: AuthRequest, res, next) =
 });
 
 // Get user's tracks
-userRoutes.get('/:username/tracks', optionalAuth, async (req: AuthRequest, res, next) => {
+userRoutes.get('/:username/tracks', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { username } = req.params;
     const page = parseInt(req.query.page as string) || 1;
@@ -118,7 +119,7 @@ userRoutes.get('/:username/tracks', optionalAuth, async (req: AuthRequest, res, 
 });
 
 // Follow/unfollow user
-userRoutes.post('/:username/follow', authenticate, async (req: AuthRequest, res, next) => {
+userRoutes.post('/:username/follow', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { username } = req.params;
     
@@ -162,7 +163,7 @@ userRoutes.post('/:username/follow', authenticate, async (req: AuthRequest, res,
 });
 
 // Update profile
-userRoutes.patch('/me', authenticate, async (req: AuthRequest, res, next) => {
+userRoutes.patch('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const updateSchema = z.object({
       displayName: z.string().min(1).max(100).optional(),

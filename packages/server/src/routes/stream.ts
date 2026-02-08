@@ -1,11 +1,12 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { createReadStream, statSync, existsSync } from 'fs';
 import path from 'path';
 import { prisma } from '../db/client.js';
 import { cache, cacheKeys } from '../db/redis.js';
 import { config } from '../config/index.js';
 import { errors } from '../middleware/errorHandler.js';
-import { optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { optionalAuth } from '../middleware/auth.js';
+import '../types/express.js';
 
 export const streamRoutes = Router();
 
@@ -39,7 +40,7 @@ const getQualityFile = (track: any, quality: Quality): string | null => {
 };
 
 // Stream audio with range support
-streamRoutes.get('/:trackId', optionalAuth, async (req: AuthRequest, res: Response, next) => {
+streamRoutes.get('/:trackId', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { trackId } = req.params;
     const quality = (req.query.quality as Quality) || 'medium';
@@ -209,7 +210,7 @@ async function trackPlay(trackId: string, userId: string) {
 }
 
 // Update play history on completion
-streamRoutes.post('/:trackId/complete', optionalAuth, async (req: AuthRequest, res, next) => {
+streamRoutes.post('/:trackId/complete', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user) {
       return res.json({ success: true });

@@ -1,13 +1,14 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { errors } from '../middleware/errorHandler.js';
-import { authenticate, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
+import '../types/express.js';
 
 export const albumRoutes = Router();
 
 // Get album by ID
-albumRoutes.get('/:albumId', optionalAuth, async (req: AuthRequest, res, next) => {
+albumRoutes.get('/:albumId', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { albumId } = req.params;
     
@@ -52,7 +53,7 @@ albumRoutes.get('/:albumId', optionalAuth, async (req: AuthRequest, res, next) =
 });
 
 // Create album
-albumRoutes.post('/', authenticate, async (req: AuthRequest, res, next) => {
+albumRoutes.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.user!.isArtist) {
       throw errors.forbidden('Only artists can create albums');
@@ -108,7 +109,7 @@ albumRoutes.post('/', authenticate, async (req: AuthRequest, res, next) => {
 });
 
 // Update album
-albumRoutes.patch('/:albumId', authenticate, async (req: AuthRequest, res, next) => {
+albumRoutes.patch('/:albumId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { albumId } = req.params;
     
@@ -158,7 +159,7 @@ albumRoutes.patch('/:albumId', authenticate, async (req: AuthRequest, res, next)
 });
 
 // Delete album
-albumRoutes.delete('/:albumId', authenticate, async (req: AuthRequest, res, next) => {
+albumRoutes.delete('/:albumId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { albumId } = req.params;
     

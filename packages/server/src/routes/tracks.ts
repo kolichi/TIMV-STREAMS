@@ -1,14 +1,15 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { cache, cacheKeys } from '../db/redis.js';
 import { errors } from '../middleware/errorHandler.js';
-import { authenticate, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
+import '../types/express.js';
 
 export const trackRoutes = Router();
 
 // Get trending tracks
-trackRoutes.get('/trending', optionalAuth, async (req: AuthRequest, res, next) => {
+trackRoutes.get('/trending', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     // Try cache first
     const cached = await cache.get<any[]>(cacheKeys.trending());
@@ -50,7 +51,7 @@ trackRoutes.get('/trending', optionalAuth, async (req: AuthRequest, res, next) =
 });
 
 // Get new releases
-trackRoutes.get('/new', optionalAuth, async (req: AuthRequest, res, next) => {
+trackRoutes.get('/new', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const cached = await cache.get<any[]>(cacheKeys.newReleases());
     if (cached) {
@@ -90,7 +91,7 @@ trackRoutes.get('/new', optionalAuth, async (req: AuthRequest, res, next) => {
 });
 
 // Get single track
-trackRoutes.get('/:trackId', optionalAuth, async (req: AuthRequest, res, next) => {
+trackRoutes.get('/:trackId', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { trackId } = req.params;
     
@@ -150,7 +151,7 @@ trackRoutes.get('/:trackId', optionalAuth, async (req: AuthRequest, res, next) =
 });
 
 // Like/unlike track
-trackRoutes.post('/:trackId/like', authenticate, async (req: AuthRequest, res, next) => {
+trackRoutes.post('/:trackId/like', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { trackId } = req.params;
     
@@ -194,7 +195,7 @@ trackRoutes.post('/:trackId/like', authenticate, async (req: AuthRequest, res, n
 });
 
 // Get user's liked tracks
-trackRoutes.get('/liked/me', authenticate, async (req: AuthRequest, res, next) => {
+trackRoutes.get('/liked/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -246,7 +247,7 @@ trackRoutes.get('/liked/me', authenticate, async (req: AuthRequest, res, next) =
 });
 
 // Update track
-trackRoutes.patch('/:trackId', authenticate, async (req: AuthRequest, res, next) => {
+trackRoutes.patch('/:trackId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { trackId } = req.params;
     
@@ -301,7 +302,7 @@ trackRoutes.patch('/:trackId', authenticate, async (req: AuthRequest, res, next)
 });
 
 // Delete track
-trackRoutes.delete('/:trackId', authenticate, async (req: AuthRequest, res, next) => {
+trackRoutes.delete('/:trackId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { trackId } = req.params;
     

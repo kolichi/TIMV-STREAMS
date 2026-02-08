@@ -1,13 +1,14 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db/client.js';
 import { errors } from '../middleware/errorHandler.js';
-import { authenticate, optionalAuth, AuthRequest } from '../middleware/auth.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
+import '../types/express.js';
 
 export const playlistRoutes = Router();
 
 // Get playlist by ID
-playlistRoutes.get('/:playlistId', optionalAuth, async (req: AuthRequest, res, next) => {
+playlistRoutes.get('/:playlistId', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { playlistId } = req.params;
     
@@ -81,7 +82,7 @@ playlistRoutes.get('/:playlistId', optionalAuth, async (req: AuthRequest, res, n
 });
 
 // Create playlist
-playlistRoutes.post('/', authenticate, async (req: AuthRequest, res, next) => {
+playlistRoutes.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const schema = z.object({
       title: z.string().min(1).max(200),
@@ -129,7 +130,7 @@ playlistRoutes.post('/', authenticate, async (req: AuthRequest, res, next) => {
 });
 
 // Add track to playlist
-playlistRoutes.post('/:playlistId/tracks', authenticate, async (req: AuthRequest, res, next) => {
+playlistRoutes.post('/:playlistId/tracks', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { playlistId } = req.params;
     const { trackId } = req.body;
@@ -191,7 +192,7 @@ playlistRoutes.post('/:playlistId/tracks', authenticate, async (req: AuthRequest
 });
 
 // Remove track from playlist
-playlistRoutes.delete('/:playlistId/tracks/:trackId', authenticate, async (req: AuthRequest, res, next) => {
+playlistRoutes.delete('/:playlistId/tracks/:trackId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { playlistId, trackId } = req.params;
     
@@ -218,7 +219,7 @@ playlistRoutes.delete('/:playlistId/tracks/:trackId', authenticate, async (req: 
 });
 
 // Update playlist
-playlistRoutes.patch('/:playlistId', authenticate, async (req: AuthRequest, res, next) => {
+playlistRoutes.patch('/:playlistId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { playlistId } = req.params;
     
@@ -259,7 +260,7 @@ playlistRoutes.patch('/:playlistId', authenticate, async (req: AuthRequest, res,
 });
 
 // Delete playlist
-playlistRoutes.delete('/:playlistId', authenticate, async (req: AuthRequest, res, next) => {
+playlistRoutes.delete('/:playlistId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { playlistId } = req.params;
     
@@ -284,7 +285,7 @@ playlistRoutes.delete('/:playlistId', authenticate, async (req: AuthRequest, res
 });
 
 // Get user's playlists
-playlistRoutes.get('/user/:username', optionalAuth, async (req: AuthRequest, res, next) => {
+playlistRoutes.get('/user/:username', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { username } = req.params;
     

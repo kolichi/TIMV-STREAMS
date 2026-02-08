@@ -114,8 +114,8 @@ router.delete('/:id', authenticate, async (req, res, next) => {
       return res.status(400).json({ error: 'Cannot delete default genres' });
     }
 
-    // Only allow creator or admin to delete
-    if (genre.createdById !== req.user!.id && req.user!.role !== 'admin') {
+    // Only allow creator to delete
+    if (genre.createdById !== req.user!.id) {
       return res.status(403).json({ error: 'Not authorized to delete this genre' });
     }
 

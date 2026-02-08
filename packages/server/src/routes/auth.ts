@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -7,7 +7,8 @@ import nodemailer from 'nodemailer';
 import { prisma } from '../db/client.js';
 import { config } from '../config/index.js';
 import { errors } from '../middleware/errorHandler.js';
-import { authenticate, AuthRequest } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
+import '../types/express.js';
 
 export const authRoutes = Router();
 
@@ -549,7 +550,7 @@ authRoutes.post('/refresh', async (req, res, next) => {
 });
 
 // Logout
-authRoutes.post('/logout', authenticate, async (req: AuthRequest, res, next) => {
+authRoutes.post('/logout', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { refreshToken } = req.body;
     
@@ -566,7 +567,7 @@ authRoutes.post('/logout', authenticate, async (req: AuthRequest, res, next) => 
 });
 
 // Get current user
-authRoutes.get('/me', authenticate, async (req: AuthRequest, res, next) => {
+authRoutes.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
