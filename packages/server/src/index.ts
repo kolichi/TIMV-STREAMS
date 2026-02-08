@@ -14,6 +14,7 @@ import { playlistRoutes } from './routes/playlists.js';
 import { streamRoutes } from './routes/stream.js';
 import { uploadRoutes } from './routes/upload.js';
 import { searchRoutes } from './routes/search.js';
+import { genreRoutes } from './routes/genres.js';
 
 const app = express();
 
@@ -82,6 +83,7 @@ app.use('/api/playlists', playlistRoutes);
 app.use('/api/stream', streamRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/genres', genreRoutes);
 
 // Static files for uploads (with caching headers)
 app.use('/uploads', express.static(config.uploadDir, {
