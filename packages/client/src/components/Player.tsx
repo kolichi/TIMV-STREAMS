@@ -123,7 +123,7 @@ export function Player() {
             <div className="min-w-0">
               <p className="font-medium truncate">{currentTrack.title}</p>
               <p className="text-sm text-surface-400 truncate">
-                {currentTrack.artist.displayName || currentTrack.artist.username}
+                {currentTrack.artist?.displayName || currentTrack.artist?.username || 'Unknown Artist'}
               </p>
             </div>
           </button>
@@ -310,13 +310,17 @@ export function Player() {
             {/* Track Info */}
             <div className="px-8 text-center">
               <h2 className="text-2xl font-bold truncate">{currentTrack.title}</h2>
-              <Link
-                to={`/artist/${currentTrack.artist.username}`}
-                onClick={() => setIsExpanded(false)}
-                className="text-surface-400 hover:text-primary-400 transition-colors"
-              >
-                {currentTrack.artist.displayName || currentTrack.artist.username}
-              </Link>
+              {currentTrack.artist ? (
+                <Link
+                  to={`/artist/${currentTrack.artist.username}`}
+                  onClick={() => setIsExpanded(false)}
+                  className="text-surface-400 hover:text-primary-400 transition-colors"
+                >
+                  {currentTrack.artist.displayName || currentTrack.artist.username}
+                </Link>
+              ) : (
+                <span className="text-surface-400">Unknown Artist</span>
+              )}
             </div>
 
             {/* Progress */}
@@ -525,7 +529,7 @@ function QueueItem({
           {track.title}
         </p>
         <p className="text-xs text-surface-400 truncate">
-          {track.artist.displayName || track.artist.username}
+          {track.artist?.displayName || track.artist?.username || 'Unknown Artist'}
         </p>
       </div>
     </button>

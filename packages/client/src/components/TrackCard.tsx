@@ -63,7 +63,7 @@ export function TrackCard({ track, showArtist = true, onLike }: TrackCardProps) 
         <h3 className="font-semibold truncate hover:underline">{track.title}</h3>
       </Link>
 
-      {showArtist && (
+      {showArtist && track.artist && (
         <Link
           to={`/artist/${track.artist.username}`}
           className="text-sm text-surface-400 hover:text-white truncate block mt-1"
@@ -178,13 +178,15 @@ export function TrackListItem({
         >
           {track.title}
         </p>
-        <Link
-          to={`/artist/${track.artist.username}`}
-          onClick={(e) => e.stopPropagation()}
-          className="text-sm text-surface-400 hover:text-white hover:underline truncate block"
-        >
-          {track.artist.displayName || track.artist.username}
-        </Link>
+        {track.artist && (
+          <Link
+            to={`/artist/${track.artist.username}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-sm text-surface-400 hover:text-white hover:underline truncate block"
+          >
+            {track.artist.displayName || track.artist.username}
+          </Link>
+        )}
       </div>
 
       {/* Play count */}
