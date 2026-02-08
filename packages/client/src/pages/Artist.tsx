@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Pause, Heart, Share2, MoreHorizontal, Clock } from 'lucide-react';
-import { usersApi, tracksApi } from '../lib/api';
+import { usersApi, tracksApi, getUploadUrl } from '../lib/api';
 import { usePlayerStore } from '../store/player';
 import { useAuthStore } from '../store/auth';
 import { TrackListItem } from '../components/TrackCard';
@@ -82,7 +82,7 @@ export function Artist() {
             <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden bg-surface-700 shadow-2xl flex-shrink-0">
               {artist.avatarUrl ? (
                 <img
-                  src={`/uploads/${artist.avatarUrl}`}
+                  src={getUploadUrl(artist.avatarUrl})
                   alt={artist.displayName || artist.username}
                   className="w-full h-full object-cover"
                 />

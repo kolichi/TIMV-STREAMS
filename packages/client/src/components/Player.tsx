@@ -18,6 +18,7 @@ import {
   Wifi,
   Signal,
 } from 'lucide-react';
+import { getUploadUrl } from '../lib/api';
 import { usePlayerStore, Track } from '../store/player';
 import clsx from 'clsx';
 
@@ -107,7 +108,7 @@ export function Player() {
             <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-surface-700 flex-shrink-0">
               {currentTrack.coverUrl || currentTrack.album?.coverUrl ? (
                 <img
-                  src={`/uploads/${currentTrack.coverUrl || currentTrack.album?.coverUrl}`}
+                  src={getUploadUrl(currentTrack.coverUrl || currentTrack.album?.coverUrl)}
                   alt={currentTrack.title}
                   className="w-full h-full object-cover"
                 />
@@ -297,7 +298,7 @@ export function Player() {
               <div className="w-full max-w-sm aspect-square rounded-2xl overflow-hidden shadow-2xl">
                 {currentTrack.coverUrl || currentTrack.album?.coverUrl ? (
                   <img
-                    src={`/uploads/${currentTrack.coverUrl || currentTrack.album?.coverUrl}`}
+                    src={getUploadUrl(currentTrack.coverUrl || currentTrack.album?.coverUrl)}
                     alt={currentTrack.title}
                     className="w-full h-full object-cover"
                   />
@@ -511,7 +512,7 @@ function QueueItem({
       <div className="w-10 h-10 rounded overflow-hidden bg-surface-700 flex-shrink-0">
         {track.coverUrl || track.album?.coverUrl ? (
           <img
-            src={`/uploads/${track.coverUrl || track.album?.coverUrl}`}
+            src={getUploadUrl(track.coverUrl || track.album?.coverUrl)}
             alt={track.title}
             className="w-full h-full object-cover"
           />

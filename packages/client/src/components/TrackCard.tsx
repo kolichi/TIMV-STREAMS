@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Play, MoreHorizontal, Heart } from 'lucide-react';
 import { usePlayerStore, Track } from '../store/player';
+import { getUploadUrl } from '../lib/api';
 import clsx from 'clsx';
 
 interface TrackCardProps {
@@ -28,7 +29,7 @@ export function TrackCard({ track, showArtist = true, onLike }: TrackCardProps) 
       <div className="relative aspect-square rounded-lg overflow-hidden mb-3">
         {track.coverUrl || track.album?.coverUrl ? (
           <img
-            src={`/uploads/${track.coverUrl || track.album?.coverUrl}`}
+            src={getUploadUrl(track.coverUrl || track.album?.coverUrl)}
             alt={track.title}
             className="w-full h-full object-cover"
             loading="lazy"
@@ -157,7 +158,7 @@ export function TrackListItem({
         <div className="w-10 h-10 rounded overflow-hidden bg-surface-700 flex-shrink-0">
           {track.coverUrl || track.album?.coverUrl ? (
             <img
-              src={`/uploads/${track.coverUrl || track.album?.coverUrl}`}
+              src={getUploadUrl(track.coverUrl || track.album?.coverUrl)}
               alt={track.title}
               className="w-full h-full object-cover"
               loading="lazy"

@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Play, Pause, Share2, MoreHorizontal, Clock, Calendar } from 'lucide-react';
-import { albumsApi } from '../lib/api';
+import { albumsApi, getUploadUrl } from '../lib/api';
 import { usePlayerStore } from '../store/player';
 import { TrackListItem } from '../components/TrackCard';
 
@@ -83,7 +83,7 @@ export function Album() {
             <div className="w-60 h-60 rounded-xl overflow-hidden bg-surface-700 shadow-2xl flex-shrink-0">
               {album.coverUrl ? (
                 <img
-                  src={`/uploads/${album.coverUrl}`}
+                  src={getUploadUrl(album.coverUrl})
                   alt={album.title}
                   className="w-full h-full object-cover"
                 />
@@ -103,12 +103,12 @@ export function Album() {
               )}
               <div className="flex items-center justify-center md:justify-start flex-wrap gap-2 text-sm">
                 <Link
-                  to={`/artist/${album.artist?.username}`}
+                  to={`/artist/${album.artist?.username})
                   className="flex items-center gap-2"
                 >
                   {album.artist?.avatarUrl && (
                     <img
-                      src={`/uploads/${album.artist.avatarUrl}`}
+                      src={getUploadUrl(album.artist.avatarUrl})
                       alt={album.artist.displayName || album.artist.username}
                       className="w-6 h-6 rounded-full"
                     />

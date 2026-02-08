@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Play, Pause, Heart, Share2, MoreHorizontal, Clock } from 'lucide-react';
-import { playlistsApi, tracksApi } from '../lib/api';
+import { playlistsApi, tracksApi, getUploadUrl } from '../lib/api';
 import { usePlayerStore } from '../store/player';
 import { useAuthStore } from '../store/auth';
 import { TrackListItem } from '../components/TrackCard';
@@ -77,7 +77,7 @@ export function Playlist() {
             <div className="w-60 h-60 rounded-xl overflow-hidden bg-surface-700 shadow-2xl flex-shrink-0">
               {playlist.coverUrl ? (
                 <img
-                  src={`/uploads/${playlist.coverUrl}`}
+                  src={getUploadUrl(playlist.coverUrl})
                   alt={playlist.title}
                   className="w-full h-full object-cover"
                 />
@@ -95,7 +95,7 @@ export function Playlist() {
               )}
               <div className="flex items-center justify-center md:justify-start gap-2 text-sm">
                 <Link
-                  to={`/artist/${playlist.user?.username}`}
+                  to={`/artist/${playlist.user?.username})
                   className="font-medium hover:underline"
                 >
                   {playlist.user?.displayName || playlist.user?.username}

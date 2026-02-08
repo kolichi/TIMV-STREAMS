@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Home, Search, Library, Upload, Settings, Music2 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
+import { getUploadUrl } from '../lib/api';
 import clsx from 'clsx';
 
 interface SidebarProps {
@@ -74,7 +75,7 @@ export function Sidebar({ className }: SidebarProps) {
           >
             {user.avatarUrl ? (
               <img
-                src={`/uploads/${user.avatarUrl}`}
+                src={getUploadUrl(user.avatarUrl)}
                 alt={user.displayName || user.username}
                 className="w-10 h-10 rounded-full object-cover"
               />

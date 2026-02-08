@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { User, Mail, Mic, LogOut, Trash2, Loader2, Check } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
-import { usersApi, authApi } from '../lib/api';
+import { usersApi, authApi, getUploadUrl } from '../lib/api';
 import clsx from 'clsx';
 
 export function Settings() {
@@ -60,7 +60,7 @@ export function Settings() {
             <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-700">
               {user.avatarUrl ? (
                 <img
-                  src={`/uploads/${user.avatarUrl}`}
+                  src={getUploadUrl(user.avatarUrl})
                   alt={user.displayName || user.username}
                   className="w-full h-full object-cover"
                 />
