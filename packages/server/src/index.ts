@@ -24,16 +24,22 @@ app.use(helmet({
   contentSecurityPolicy: false, // Allow audio streaming
 }));
 
-// CORS configuration - support multiple origins
+// CORS configuration - support multiple origins and Vercel preview URLs
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
     
+    // Allow all Vercel preview URLs
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    
+    // Allow configured origins
     if (config.corsOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log(`CORS blocked origin: ${origin}. Allowed: ${config.corsOrigins.join(', ')}`);
+      console.log(`CORS blocked origin: ${origin}. Allowed: ${config.corsOrigins.join(', ')} and *.vercel.app`);
       callback(null, false);
     }
   },
