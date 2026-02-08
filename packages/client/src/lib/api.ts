@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/auth';
 
 // Use environment variable for API URL in production, or proxy in development
+// VITE_API_URL should be the base URL without /api (e.g., https://backend-development.iswe.co.zm)
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // Helper to get the correct URL for uploaded assets (images, etc.)
@@ -14,6 +15,7 @@ export const getUploadUrl = (path: string | null | undefined): string => {
 };
 
 const api = axios.create({
+  // If API_BASE_URL is provided, append /api. Otherwise use relative /api
   baseURL: API_BASE_URL ? `${API_BASE_URL}/api` : '/api',
   headers: {
     'Content-Type': 'application/json',
