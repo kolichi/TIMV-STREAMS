@@ -23,9 +23,19 @@ app.use(helmet({
   contentSecurityPolicy: false, // Allow audio streaming
 }));
 
-// CORS configuration
+// CORS configuration - support multiple origins
 app.use(cors({
-  origin: config.corsOrigin,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (config.corsOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`CORS blocked origin: ${origin}. Allowed: ${config.corsOrigins.join(', ')}`);
+      callback(null, false);
+    }
+  },
   credentials: true,
   exposedHeaders: ['Content-Range', 'Accept-Ranges', 'Content-Length'],
 }));

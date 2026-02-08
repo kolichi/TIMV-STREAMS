@@ -61,8 +61,8 @@ export const config = {
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
   rateLimitMaxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
   
-  // CORS
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  // CORS - supports multiple origins separated by comma
+  corsOrigins: (process.env.CORS_ORIGIN || 'http://localhost:5173').split(',').map(o => o.trim()),
   
   // Chunk size for streaming (64KB for mobile optimization)
   streamChunkSize: 64 * 1024,
