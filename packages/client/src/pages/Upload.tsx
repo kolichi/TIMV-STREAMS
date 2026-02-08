@@ -153,6 +153,8 @@ export function Upload() {
   });
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
+    console.log('Files dropped:', acceptedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })));
+    
     const maxSize = 3 * 1024 * 1024; // 3MB limit
     
     const audioFiles = acceptedFiles.filter((file) => {
@@ -160,10 +162,16 @@ export function Upload() {
       const extMatch = SUPPORTED_AUDIO_EXTENSIONS.some(ext => 
         file.name.toLowerCase().endsWith(ext)
       );
+      console.log(`File ${file.name}: mimeMatch=${mimeMatch}, extMatch=${extMatch}, type=${file.type}`);
       return mimeMatch || extMatch;
     });
     
-    if (audioFiles.length === 0) return;
+    console.log('Audio files after filter:', audioFiles.length);
+    
+    if (audioFiles.length === 0) {
+      alert('No valid audio files found. Supported formats: MP3, WAV, FLAC, AAC, M4A, OGG');
+      return;
+    }
     
     // Check for oversized files and warn user
     const oversizedFiles = audioFiles.filter(f => f.size > maxSize);
@@ -199,11 +207,18 @@ export function Upload() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected: (rejectedFiles) => {
+      console.log('Files rejected:', rejectedFiles);
+      const reasons = rejectedFiles.map(f => 
+        `${f.file.name}: ${f.errors.map(e => e.message).join(', ')}`
+      ).join('\n');
+      alert(`Some files were rejected:\n${reasons}`);
+    },
     accept: {
       'audio/*': SUPPORTED_AUDIO_EXTENSIONS,
     },
     multiple: true,
-    maxSize: 3 * 1024 * 1024, // 3MB limit for serverless
+    maxSize: 50 * 1024 * 1024, // 50MB - we'll check size later with better error messages
   });
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {

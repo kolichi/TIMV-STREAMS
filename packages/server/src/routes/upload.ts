@@ -196,41 +196,122 @@ async function processImage(
   return results;
 }
 
-// Upload track
+// Upload track - supports both multipart form data AND base64 JSON
 uploadRoutes.post(
   '/track',
   authenticate,
   requireArtist,
-  audioUpload.single('audio'),
   async (req: Request, res: Response, next: NextFunction) => {
+    let tempFilePath: string | null = null;
+    
     try {
-      if (!req.file) {
-        throw errors.badRequest('No audio file provided');
+      const contentType = req.headers['content-type'] || '';
+      
+      let filePath: string;
+      let originalName: string;
+      let fileSize: number;
+      let titleInput: string;
+      let albumIdInput: string | undefined;
+      let genreInput: string | undefined;
+      let isPublicInput: boolean;
+      let isExplicitInput: boolean;
+      let coverUrlInput: string | undefined;
+      let durationInput: number | undefined;
+      
+      if (contentType.includes('application/json')) {
+        // Handle base64 upload (from serverless-compatible frontend)
+        const { audio, audioMimeType, audioFileName, title, albumId, genre, isPublic = true, isExplicit = false, coverUrl, duration } = req.body;
+        
+        if (!audio) {
+          throw errors.badRequest('No audio data provided');
+        }
+        
+        if (!title) {
+          throw errors.badRequest('Track title is required');
+        }
+        
+        // Decode base64 and save to temp file
+        const buffer = Buffer.from(audio, 'base64');
+        const ext = path.extname(audioFileName || '.mp3').toLowerCase() || '.mp3';
+        const filename = `${uuid()}${ext}`;
+        filePath = path.join(audioDir, filename);
+        tempFilePath = filePath;
+        
+        await fs.writeFile(filePath, buffer);
+        
+        originalName = audioFileName || 'upload.mp3';
+        fileSize = buffer.length;
+        titleInput = title;
+        albumIdInput = albumId;
+        genreInput = genre;
+        isPublicInput = isPublic === 'true' || isPublic === true;
+        isExplicitInput = isExplicit === 'true' || isExplicit === true;
+        coverUrlInput = coverUrl;
+        durationInput = duration;
+      } else {
+        // Handle multipart form upload (legacy)
+        await new Promise<void>((resolve, reject) => {
+          audioUpload.single('audio')(req, res, (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        if (!req.file) {
+          throw errors.badRequest('No audio file provided');
+        }
+        
+        filePath = req.file.path;
+        originalName = req.file.originalname;
+        fileSize = req.file.size;
+        titleInput = req.body.title;
+        albumIdInput = req.body.albumId;
+        genreInput = req.body.genre;
+        isPublicInput = req.body.isPublic === 'true' || req.body.isPublic === true;
+        isExplicitInput = req.body.isExplicit === 'true' || req.body.isExplicit === true;
+        coverUrlInput = req.body.coverUrl;
+        durationInput = req.body.duration ? parseInt(req.body.duration) : undefined;
+        
+        if (!titleInput) {
+          throw errors.badRequest('Track title is required');
+        }
       }
       
-      const { title, albumId, genre, isPublic = true, isExplicit = false } = req.body;
-      
-      if (!title) {
-        throw errors.badRequest('Track title is required');
-      }
-      
-      const filePath = req.file.path;
-      const baseName = path.basename(req.file.filename, path.extname(req.file.filename));
+      const baseName = path.basename(filePath, path.extname(filePath));
       
       // Extract metadata
-      const metadata = await mm.parseFile(filePath);
-      const duration = Math.round(metadata.format.duration || 0);
-      const bitrate = metadata.format.bitrate ? Math.round(metadata.format.bitrate / 1000) : null;
-      const sampleRate = metadata.format.sampleRate || null;
+      let duration: number;
+      let bitrate: number | null = null;
+      let sampleRate: number | null = null;
+      
+      try {
+        const metadata = await mm.parseFile(filePath);
+        duration = durationInput || Math.round(metadata.format.duration || 0);
+        bitrate = metadata.format.bitrate ? Math.round(metadata.format.bitrate / 1000) : null;
+        sampleRate = metadata.format.sampleRate || null;
+      } catch (metaErr) {
+        console.error('Metadata extraction error:', metaErr);
+        duration = durationInput || 0;
+      }
       
       // Generate waveform
-      const waveformData = await generateWaveform(filePath);
+      let waveformData: number[] = [];
+      try {
+        waveformData = await generateWaveform(filePath);
+      } catch (waveErr) {
+        console.error('Waveform generation error:', waveErr);
+      }
       
       // Transcode to multiple qualities (async)
-      const transcodePromise = transcodeAudio(filePath, baseName);
+      let transcoded: { low?: string; medium?: string; high?: string } = {};
+      try {
+        transcoded = await transcodeAudio(filePath, baseName);
+      } catch (transErr) {
+        console.error('Transcoding error:', transErr);
+      }
       
       // Generate slug
-      const slug = title
+      const slug = titleInput
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '');
@@ -245,28 +326,26 @@ uploadRoutes.post(
       
       const finalSlug = existingTrack ? `${slug}-${Date.now()}` : slug;
       
-      // Wait for transcoding
-      const transcoded = await transcodePromise;
-      
       // Create track record
       const track = await prisma.track.create({
         data: {
-          title,
+          title: titleInput,
           slug: finalSlug,
           duration,
-          fileUrl: `audio/${req.file.filename}`,
+          fileUrl: `audio/${path.basename(filePath)}`,
           fileUrlLow: transcoded.low,
           fileUrlMedium: transcoded.medium,
           fileUrlHigh: transcoded.high,
           waveformData,
-          genre: genre || null,
-          isPublic: isPublic === 'true' || isPublic === true,
-          isExplicit: isExplicit === 'true' || isExplicit === true,
-          fileSize: req.file.size,
+          genre: genreInput || null,
+          isPublic: isPublicInput,
+          isExplicit: isExplicitInput,
+          coverUrl: coverUrlInput || null,
+          fileSize,
           bitrate,
           sampleRate,
           artistId: req.user!.id,
-          albumId: albumId || null,
+          albumId: albumIdInput || null,
         },
         include: {
           artist: {
@@ -280,30 +359,65 @@ uploadRoutes.post(
         },
       });
       
+      tempFilePath = null; // Don't delete on success
       res.status(201).json(track);
     } catch (error) {
-      // Clean up uploaded file on error
-      if (req.file) {
-        await fs.unlink(req.file.path).catch(() => {});
+      // Clean up temp file on error
+      if (tempFilePath) {
+        await fs.unlink(tempFilePath).catch(() => {});
       }
       next(error);
     }
   }
 );
 
-// Upload cover image
+// Upload cover image - supports both multipart and base64
 uploadRoutes.post(
   '/cover',
   authenticate,
-  imageUpload.single('cover'),
   async (req: Request, res: Response, next: NextFunction) => {
+    let tempFilePath: string | null = null;
+    
     try {
-      if (!req.file) {
-        throw errors.badRequest('No image file provided');
+      const contentType = req.headers['content-type'] || '';
+      
+      let filePath: string;
+      
+      if (contentType.includes('application/json')) {
+        // Handle base64 upload
+        const { image, mimeType } = req.body;
+        
+        if (!image) {
+          throw errors.badRequest('No image data provided');
+        }
+        
+        const buffer = Buffer.from(image, 'base64');
+        const ext = mimeType?.includes('png') ? '.png' : mimeType?.includes('webp') ? '.webp' : '.jpg';
+        const filename = `${uuid()}${ext}`;
+        filePath = path.join(coverDir, filename);
+        tempFilePath = filePath;
+        
+        await fs.writeFile(filePath, buffer);
+      } else {
+        // Handle multipart form upload
+        await new Promise<void>((resolve, reject) => {
+          imageUpload.single('cover')(req, res, (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        if (!req.file) {
+          throw errors.badRequest('No image file provided');
+        }
+        
+        filePath = req.file.path;
       }
       
       const baseName = uuid();
-      const processed = await processImage(req.file.path, baseName);
+      const processed = await processImage(filePath, baseName);
+      
+      tempFilePath = null; // processImage handles cleanup
       
       res.json({
         coverUrl: processed.large,
@@ -311,34 +425,67 @@ uploadRoutes.post(
         coverUrlMedium: processed.medium,
       });
     } catch (error) {
-      if (req.file) {
-        await fs.unlink(req.file.path).catch(() => {});
+      if (tempFilePath) {
+        await fs.unlink(tempFilePath).catch(() => {});
       }
       next(error);
     }
   }
 );
 
-// Upload avatar
+// Upload avatar - supports both multipart and base64
 uploadRoutes.post(
   '/avatar',
   authenticate,
-  imageUpload.single('avatar'),
   async (req: Request, res: Response, next: NextFunction) => {
+    let tempFilePath: string | null = null;
+    
     try {
-      if (!req.file) {
-        throw errors.badRequest('No image file provided');
+      const contentType = req.headers['content-type'] || '';
+      
+      let filePath: string;
+      
+      if (contentType.includes('application/json')) {
+        // Handle base64 upload
+        const { image, mimeType } = req.body;
+        
+        if (!image) {
+          throw errors.badRequest('No image data provided');
+        }
+        
+        const buffer = Buffer.from(image, 'base64');
+        const ext = mimeType?.includes('png') ? '.png' : mimeType?.includes('webp') ? '.webp' : '.jpg';
+        const filename = `${uuid()}${ext}`;
+        filePath = path.join(avatarDir, filename);
+        tempFilePath = filePath;
+        
+        await fs.writeFile(filePath, buffer);
+      } else {
+        // Handle multipart form upload
+        await new Promise<void>((resolve, reject) => {
+          imageUpload.single('avatar')(req, res, (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        
+        if (!req.file) {
+          throw errors.badRequest('No image file provided');
+        }
+        
+        filePath = req.file.path;
       }
       
       const outputName = `${req.user!.id}.webp`;
       const outputPath = path.join(avatarDir, outputName);
       
-      await sharp(req.file.path)
+      await sharp(filePath)
         .resize(200, 200, { fit: 'cover' })
         .webp({ quality: 90 })
         .toFile(outputPath);
       
-      await fs.unlink(req.file.path);
+      await fs.unlink(filePath);
+      tempFilePath = null;
       
       const avatarUrl = `avatars/${outputName}`;
       
@@ -353,8 +500,8 @@ uploadRoutes.post(
       
       res.json({ avatarUrl });
     } catch (error) {
-      if (req.file) {
-        await fs.unlink(req.file.path).catch(() => {});
+      if (tempFilePath) {
+        await fs.unlink(tempFilePath).catch(() => {});
       }
       next(error);
     }
