@@ -82,7 +82,7 @@ export function Artist() {
             <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden bg-surface-700 shadow-2xl flex-shrink-0">
               {artist.avatarUrl ? (
                 <img
-                  src={getUploadUrl(artist.avatarUrl})
+                  src={getUploadUrl(artist.avatarUrl)}
                   alt={artist.displayName || artist.username}
                   className="w-full h-full object-cover"
                 />

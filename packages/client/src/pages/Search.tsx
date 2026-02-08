@@ -164,13 +164,13 @@ export function Search() {
                 {results.artists.map((artist: any) => (
                   <Link
                     key={artist.id}
-                    to={`/artist/${artist.username})
+                    to={`/artist/${artist.username}`}
                     className="group text-center"
                   >
                     <div className="aspect-square rounded-full overflow-hidden mb-3 mx-auto w-32 bg-surface-700">
                       {artist.avatarUrl ? (
                         <img
-                          src={getUploadUrl(artist.avatarUrl})
+                          src={getUploadUrl(artist.avatarUrl)}
                           alt={artist.displayName || artist.username}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
@@ -202,13 +202,13 @@ export function Search() {
                 {results.albums.map((album: any) => (
                   <Link
                     key={album.id}
-                    to={`/album/${album.id})
+                    to={`/album/${album.id}`}
                     className="group bg-surface-800/50 hover:bg-surface-800 rounded-xl p-4 transition-all"
                   >
                     <div className="aspect-square rounded-lg overflow-hidden mb-3 bg-surface-700">
                       {album.coverUrl ? (
                         <img
-                          src={getUploadUrl(album.coverUrl})
+                          src={getUploadUrl(album.coverUrl)}
                           alt={album.title}
                           className="w-full h-full object-cover"
                         />
@@ -234,13 +234,13 @@ export function Search() {
                 {results.playlists.map((playlist: any) => (
                   <Link
                     key={playlist.id}
-                    to={`/playlist/${playlist.id})
+                    to={`/playlist/${playlist.id}`}
                     className="group bg-surface-800/50 hover:bg-surface-800 rounded-xl p-4 transition-all"
                   >
                     <div className="aspect-square rounded-lg overflow-hidden mb-3 bg-surface-700">
                       {playlist.coverUrl ? (
                         <img
-                          src={getUploadUrl(playlist.coverUrl})
+                          src={getUploadUrl(playlist.coverUrl)}
                           alt={playlist.title}
                           className="w-full h-full object-cover"
                         />

@@ -134,13 +134,13 @@ export function Library() {
             {playlists.map((playlist: any) => (
               <Link
                 key={playlist.id}
-                to={`/playlist/${playlist.id})
+                to={`/playlist/${playlist.id}`}
                 className="group bg-surface-800/50 hover:bg-surface-800 rounded-xl p-4 transition-all"
               >
                 <div className="aspect-square rounded-lg overflow-hidden mb-3 bg-surface-700">
                   {playlist.coverUrl ? (
                     <img
-                      src={getUploadUrl(playlist.coverUrl})
+                      src={getUploadUrl(playlist.coverUrl)}
                       alt={playlist.title}
                       className="w-full h-full object-cover"
                     />

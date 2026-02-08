@@ -78,7 +78,7 @@ export function Track() {
             <div className="w-60 h-60 md:w-72 md:h-72 rounded-xl overflow-hidden bg-surface-700 shadow-2xl flex-shrink-0">
               {track.coverUrl || track.album?.coverUrl ? (
                 <img
-                  src={getUploadUrl(track.coverUrl || track.album?.coverUrl})
+                  src={getUploadUrl(track.coverUrl || track.album?.coverUrl)}
                   alt={track.title}
                   className="w-full h-full object-cover"
                 />
@@ -100,12 +100,12 @@ export function Track() {
               <h1 className="text-4xl md:text-6xl font-bold mb-4">{track.title}</h1>
               <div className="flex items-center justify-center md:justify-start flex-wrap gap-2 text-sm">
                 <Link
-                  to={`/artist/${track.artist?.username})
+                  to={`/artist/${track.artist?.username}`}
                   className="flex items-center gap-2"
                 >
                   {track.artist?.avatarUrl && (
                     <img
-                      src={getUploadUrl(track.artist.avatarUrl})
+                      src={getUploadUrl(track.artist.avatarUrl)}
                       alt={track.artist.displayName || track.artist.username}
                       className="w-6 h-6 rounded-full"
                     />
@@ -118,7 +118,7 @@ export function Track() {
                   <>
                     <span className="text-surface-400">•</span>
                     <Link
-                      to={`/album/${track.album.id})
+                      to={`/album/${track.album.id}`}
                       className="text-surface-400 hover:text-white hover:underline"
                     >
                       {track.album.title}
@@ -219,7 +219,7 @@ export function Track() {
 
           {/* Artist Card */}
           <Link
-            to={`/artist/${track.artist?.username})
+            to={`/artist/${track.artist?.username}`}
             className="bg-surface-800/50 rounded-xl p-6 hover:bg-surface-800 transition-colors block"
           >
             <h3 className="font-bold mb-4">Artist</h3>
@@ -227,7 +227,7 @@ export function Track() {
               <div className="w-16 h-16 rounded-full overflow-hidden bg-surface-700">
                 {track.artist?.avatarUrl ? (
                   <img
-                    src={getUploadUrl(track.artist.avatarUrl})
+                    src={getUploadUrl(track.artist.avatarUrl)}
                     alt={track.artist.displayName || track.artist.username}
                     className="w-full h-full object-cover"
                   />

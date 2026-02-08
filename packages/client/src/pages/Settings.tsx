@@ -60,7 +60,7 @@ export function Settings() {
             <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-700">
               {user.avatarUrl ? (
                 <img
-                  src={getUploadUrl(user.avatarUrl})
+                  src={getUploadUrl(user.avatarUrl)}
                   alt={user.displayName || user.username}
                   className="w-full h-full object-cover"
                 />

@@ -77,7 +77,7 @@ export function Playlist() {
             <div className="w-60 h-60 rounded-xl overflow-hidden bg-surface-700 shadow-2xl flex-shrink-0">
               {playlist.coverUrl ? (
                 <img
-                  src={getUploadUrl(playlist.coverUrl})
+                  src={getUploadUrl(playlist.coverUrl)}
                   alt={playlist.title}
                   className="w-full h-full object-cover"
                 />
@@ -95,7 +95,7 @@ export function Playlist() {
               )}
               <div className="flex items-center justify-center md:justify-start gap-2 text-sm">
                 <Link
-                  to={`/artist/${playlist.user?.username})
+                  to={`/artist/${playlist.user?.username}`}
                   className="font-medium hover:underline"
                 >
                   {playlist.user?.displayName || playlist.user?.username}
