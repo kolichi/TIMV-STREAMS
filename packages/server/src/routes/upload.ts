@@ -40,7 +40,7 @@ const audioStorage = multer.diskStorage({
 const audioUpload = multer({
   storage: audioStorage,
   limits: {
-    fileSize: config.maxFileSize,
+    fileSize: config.maxFileSize, // 100MB default, configurable via env
   },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase().slice(1);
@@ -65,7 +65,7 @@ const imageStorage = multer.diskStorage({
 const imageUpload = multer({
   storage: imageStorage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB for images
+    fileSize: 20 * 1024 * 1024, // 20MB for images
   },
   fileFilter: (req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];

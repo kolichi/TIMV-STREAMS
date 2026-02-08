@@ -68,9 +68,9 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Body parsing - increased limit for base64 audio uploads
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Body parsing - large limit for base64 audio uploads (self-hosted)
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ extended: true, limit: '200mb' }));
 
 // Request logging
 app.use(requestLogger);
