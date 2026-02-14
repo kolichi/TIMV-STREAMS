@@ -93,7 +93,7 @@ streamRoutes.get('/:trackId', optionalAuth, async (req: Request, res: Response, 
     const fileSize = stat.size;
     const range = req.headers.range;
     
-    // Determine content type
+    // Determine content type - extended format support
     const ext = path.extname(filePath).toLowerCase();
     const contentTypes: Record<string, string> = {
       '.mp3': 'audio/mpeg',
@@ -102,8 +102,22 @@ streamRoutes.get('/:trackId', optionalAuth, async (req: Request, res: Response, 
       '.aac': 'audio/aac',
       '.ogg': 'audio/ogg',
       '.m4a': 'audio/mp4',
+      '.opus': 'audio/opus',
+      '.webm': 'audio/webm',
+      '.wma': 'audio/x-ms-wma',
+      '.aiff': 'audio/aiff',
     };
     const contentType = contentTypes[ext] || 'audio/mpeg';
+    
+    // Common headers for CORS audio streaming
+    const commonHeaders = {
+      'Content-Type': contentType,
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'public, max-age=86400',
+      'X-Content-Duration': String(track.duration),
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Expose-Headers': 'Content-Range, Accept-Ranges, Content-Length, X-Content-Duration',
+    };
     
     // Handle range requests (for seeking)
     if (range) {
@@ -113,12 +127,9 @@ streamRoutes.get('/:trackId', optionalAuth, async (req: Request, res: Response, 
       const chunkSize = end - start + 1;
       
       res.writeHead(206, {
+        ...commonHeaders,
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-        'Accept-Ranges': 'bytes',
         'Content-Length': chunkSize,
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400', // 24 hours
-        'X-Content-Duration': track.duration,
       });
       
       const stream = createReadStream(filePath, { start, end });
@@ -131,11 +142,8 @@ streamRoutes.get('/:trackId', optionalAuth, async (req: Request, res: Response, 
     } else {
       // No range - send entire file (but with streaming)
       res.writeHead(200, {
+        ...commonHeaders,
         'Content-Length': fileSize,
-        'Content-Type': contentType,
-        'Accept-Ranges': 'bytes',
-        'Cache-Control': 'public, max-age=86400',
-        'X-Content-Duration': track.duration,
       });
       
       const stream = createReadStream(filePath);

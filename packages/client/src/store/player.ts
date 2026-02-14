@@ -95,9 +95,13 @@ export const usePlayerStore = create<PlayerState>()(
         
         const howl = new Howl({
           src: [streamUrl],
-          html5: true, // Enable streaming
-          preload: true,
+          format: ['mp3', 'aac', 'ogg', 'wav', 'flac', 'webm'],
+          html5: true, // Enable streaming - required for large files
+          preload: 'metadata',
           volume: isMuted ? 0 : volume,
+          xhr: {
+            withCredentials: false,
+          },
           onload: () => {
             set({
               isLoading: false,

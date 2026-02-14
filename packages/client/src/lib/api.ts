@@ -167,9 +167,8 @@ export const searchApi = {
 // Stream API
 export const streamApi = {
   getStreamUrl: (trackId: string, quality: 'low' | 'medium' | 'high' = 'medium') => {
-    // Use full backend URL for streaming (not relative path)
-    const baseUrl = import.meta.env.VITE_API_URL || '';
-    return `${baseUrl}/api/stream/${trackId}?quality=${quality}`;
+    // Use normalized backend URL for streaming
+    return `${API_BASE_URL}/api/stream/${trackId}?quality=${quality}`;
   },
   complete: (trackId: string, duration: number) =>
     api.post(`/stream/${trackId}/complete`, { duration }),
