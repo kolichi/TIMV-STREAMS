@@ -32,6 +32,13 @@ export function Artist() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (trackId: string) => tracksApi.delete(trackId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['artist', username, 'tracks'] });
+    },
+  });
+
   if (artistLoading) {
     return (
       <div className="p-6">
@@ -212,6 +219,8 @@ export function Artist() {
                 track={track}
                 index={index + 1}
                 queue={tracks}
+                canDelete={isOwnProfile}
+                onDelete={() => deleteMutation.mutate(track.id)}
               />
             ))}
           </div>

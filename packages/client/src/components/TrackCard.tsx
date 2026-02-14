@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, MoreHorizontal, Heart } from 'lucide-react';
+import { Play, MoreHorizontal, Heart, Trash2, X } from 'lucide-react';
 import { usePlayerStore, Track } from '../store/player';
 import { getUploadUrl } from '../lib/api';
 import clsx from 'clsx';
@@ -84,11 +85,13 @@ export function TrackCard({ track, showArtist = true, onLike }: TrackCardProps) 
 }
 
 interface TrackListItemProps {
-  track: Track & { playCount?: number; isLiked?: boolean };
+  track: Track & { playCount?: number; isLiked?: boolean; artistId?: string };
   index?: number;
   showCover?: boolean;
   queue?: Track[];
   onLike?: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
 }
 
 export function TrackListItem({
@@ -97,9 +100,13 @@ export function TrackListItem({
   showCover = true,
   queue = [],
   onLike,
+  onDelete,
+  canDelete = false,
 }: TrackListItemProps) {
   const { play, currentTrack, isPlaying, togglePlay } = usePlayerStore();
   const isCurrentTrack = currentTrack?.id === track.id;
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handlePlay = () => {
     if (isCurrentTrack) {
@@ -203,7 +210,7 @@ export function TrackListItem({
       </span>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity relative">
         {onLike && (
           <button
             onClick={(e) => {
@@ -218,11 +225,92 @@ export function TrackListItem({
           </button>
         )}
         <button
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+          }}
           className="p-2 text-surface-400 hover:text-white"
         >
           <MoreHorizontal className="w-4 h-4" />
         </button>
+
+        {/* Dropdown Menu */}
+        {showMenu && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+              }}
+            />
+            <div className="absolute right-0 top-full mt-1 bg-surface-800 border border-surface-700 rounded-lg shadow-xl z-50 min-w-[150px] py-1">
+              {canDelete && onDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-red-400 hover:bg-surface-700 text-sm"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Track
+                </button>
+              )}
+              {!canDelete && (
+                <p className="px-4 py-2 text-surface-400 text-sm">No actions</p>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/60 z-50"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowDeleteConfirm(false);
+              }}
+            />
+            <div
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-surface-800 border border-surface-700 rounded-xl p-6 z-50 w-full max-w-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold">Delete Track</h3>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="p-1 text-surface-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-surface-300 mb-6">
+                Are you sure you want to delete "<strong>{track.title}</strong>"? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-2 bg-surface-700 rounded-lg hover:bg-surface-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    onDelete?.();
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

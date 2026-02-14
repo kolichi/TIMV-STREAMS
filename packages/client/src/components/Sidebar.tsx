@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Search, Library, Upload, Settings, Music2 } from 'lucide-react';
+import { Home, Search, Library, Upload, Settings, Music2, User } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { getUploadUrl } from '../lib/api';
 import clsx from 'clsx';
@@ -69,33 +69,57 @@ export function Sidebar({ className }: SidebarProps) {
       {/* User Section */}
       <div className="p-4 border-t border-surface-800">
         {isAuthenticated && user ? (
-          <NavLink
-            to="/settings"
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-800 transition-colors"
-          >
-            {user.avatarUrl ? (
-              <img
-                src={getUploadUrl(user.avatarUrl)}
-                alt={user.displayName || user.username}
-                className="w-10 h-10 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-                <span className="text-sm font-bold text-white">
-                  {(user.displayName || user.username)[0].toUpperCase()}
-                </span>
+          <div className="space-y-2">
+            {/* Profile Link */}
+            <NavLink
+              to={`/artist/${user.username}`}
+              className={({ isActive }) =>
+                clsx(
+                  'flex items-center gap-3 p-2 rounded-lg transition-colors',
+                  isActive ? 'bg-primary-500/20' : 'hover:bg-surface-800'
+                )
+              }
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={getUploadUrl(user.avatarUrl)}
+                  alt={user.displayName || user.username}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
+                  <span className="text-sm font-bold text-white">
+                    {(user.displayName || user.username)[0].toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">
+                  {user.displayName || user.username}
+                </p>
+                <p className="text-xs text-surface-400 truncate">
+                  {user.isArtist ? 'Artist' : 'Listener'}
+                </p>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">
-                {user.displayName || user.username}
-              </p>
-              <p className="text-xs text-surface-400 truncate">
-                {user.isArtist ? 'Artist' : 'Listener'}
-              </p>
-            </div>
-            <Settings className="w-5 h-5 text-surface-400" />
-          </NavLink>
+              <User className="w-5 h-5 text-surface-400" />
+            </NavLink>
+            
+            {/* Settings Link */}
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                clsx(
+                  'flex items-center gap-3 px-4 py-2 rounded-lg transition-colors text-sm',
+                  isActive
+                    ? 'bg-surface-800 text-white'
+                    : 'text-surface-400 hover:bg-surface-800 hover:text-white'
+                )
+              }
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
+            </NavLink>
+          </div>
         ) : (
           <div className="space-y-2">
             <NavLink
