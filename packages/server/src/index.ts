@@ -58,13 +58,17 @@ app.use(compression({
   },
 }));
 
-// Rate limiting
+// Rate limiting - skip for uploads and streams
 const limiter = rateLimit({
   windowMs: config.rateLimitWindowMs,
   max: config.rateLimitMaxRequests,
   message: { error: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Skip rate limiting for uploads and streams
+    return req.path.startsWith('/upload') || req.path.startsWith('/stream');
+  },
 });
 app.use('/api', limiter);
 
